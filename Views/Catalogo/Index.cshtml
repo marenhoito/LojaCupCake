@@ -1,0 +1,463 @@
+﻿@model LojaCupCake.ViewModels.CatalogoViewModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Cardápio";
+    var cultura = CultureInfo.GetCultureInfo("pt-BR");
+}
+
+<div class="catalog-page">
+    <header class="catalog-header">
+        <div>
+            <span class="catalog-eyebrow">FEITO COM CARINHO</span>
+            <h1>Nosso cardápio</h1>
+            <p>Encontre seu próximo cupcake favorito.</p>
+        </div>
+        <div class="catalog-header-status">
+            @if (Model.FilialId.HasValue)
+            {
+                <span class="selected-store-chip">📍 @Model.NomeFilialSelecionada</span>
+            }
+            <span class="cart-count-chip">🛍️ @Model.QuantidadeItensCarrinho item(ns)</span>
+        </div>
+    </header>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success catalog-alert">@TempData["Sucesso"]</div>
+    }
+    @if (TempData["Erro"] != null)
+    {
+        <div class="alert alert-danger catalog-alert">@TempData["Erro"]</div>
+    }
+
+    <div class="catalog-layout">
+        <!-- PAINEL DE FILIAIS -->
+        <aside class="catalog-sidebar stores-sidebar">
+            <div class="sidebar-heading">
+                <div>
+                    <span class="section-kicker">ENCONTRE UMA UNIDADE</span>
+                    <h2>Nossas lojas</h2>
+                </div>
+                <span class="sidebar-count">@Model.Filiais.Count</span>
+            </div>
+            <p class="sidebar-description">Selecione onde deseja retirar ou receber seu pedido.</p>
+
+            @if (!Model.Filiais.Any())
+            {
+                <div class="empty-state small-empty">Nenhuma loja disponível no momento.</div>
+            }
+            else
+            {
+                <div class="store-list">
+                    @foreach (var filial in Model.Filiais)
+                    {
+                        <article class="store-card @(filial.Selecionada ? "store-card-selected" : "")">
+                            @if (filial.SelecaoBloqueada && !filial.Selecionada)
+                            {
+                                <div class="store-card-content store-card-disabled" title="Esvazie o carrinho para trocar de filial">
+                                    <div class="store-card-top">
+                                        <strong>@filial.Nome</strong>
+                                        <span class="store-status @(filial.AbertaAgora ? "is-open" : "is-closed")">
+                                            <span></span>@filial.StatusFuncionamento
+                                        </span>
+                                    </div>
+                                    <small>📍 @filial.EnderecoResumido</small>
+                                    <small>🕒 Hoje: @filial.HorariosHoje</small>
+                                    <span class="locked-store-note">🔒 Carrinho vinculado a outra loja</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <a class="store-card-content" asp-action="Index"
+                                   asp-route-filialId="@filial.FilialId"
+                                   asp-route-categoriaId="@Model.CategoriaId"
+                                   asp-route-ordenacao="@Model.Ordenacao">
+                                    <div class="store-card-top">
+                                        <strong>@filial.Nome</strong>
+                                        <span class="store-status @(filial.AbertaAgora ? "is-open" : "is-closed")">
+                                            <span></span>@filial.StatusFuncionamento
+                                        </span>
+                                    </div>
+                                    <small>📍 @filial.EnderecoResumido</small>
+                                    <small>🕒 Hoje: @filial.HorariosHoje</small>
+                                    @if (filial.Selecionada)
+                                    {
+                                        <span class="selected-store-label">✓ Loja selecionada</span>
+                                    }
+                                </a>
+                            }
+
+                            @if (filial.HorariosSemana.Any())
+                            {
+                                <details class="store-hours-details">
+                                    <summary>Ver horários da semana</summary>
+                                    <ul>
+                                        @foreach (var horario in filial.HorariosSemana)
+                                        {
+                                            <li>@horario</li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        </aside>
+
+        <!-- PRODUTOS -->
+        <main class="catalog-main">
+            @if (!Model.FilialId.HasValue)
+            {
+                <div class="choose-store-banner">
+                    <div class="choose-store-icon">🏬</div>
+                    <div>
+                        <strong>Escolha uma loja para começar</strong>
+                        <p>Selecione uma das unidades ao lado para consultar o estoque e adicionar produtos ao seu carrinho. Enquanto isso, confira nossos produtos mais pedidos.</p>
+                    </div>
+                </div>
+            }
+            else if (Model.CarrinhoPossuiItens)
+            {
+                <div class="cart-store-notice">
+                    ℹ
+                    Seu carrinho está vinculado à loja <strong>@Model.NomeFilialSelecionada</strong>. Para trocar de unidade, remova os itens ou limpe o carrinho.
+                </div>
+            }
+
+            <div class="catalog-toolbar">
+                <div>
+                    <span class="section-kicker">ESCOLHA O SEU FAVORITO</span>
+                    <h2>@(Model.FilialId.HasValue ? "Cupcakes disponíveis" : "Os queridinhos da casa")</h2>
+                    <span class="products-count">@Model.Produtos.Count produto(s)</span>
+                </div>
+                <form asp-action="Index" method="get" class="catalog-filters">
+                    @if (Model.FilialId.HasValue)
+                    {
+                        <input type="hidden" name="filialId" value="@Model.FilialId" />
+                    }
+                    <select name="categoriaId" class="form-select" aria-label="Filtrar por categoria">
+                        <option value="">Todas as categorias</option>
+                        @foreach (var categoria in Model.Categorias)
+                        {
+                            <option value="@categoria.Value" selected="@(categoria.Selected ? "selected" : null)">@categoria.Text</option>
+                        }
+                    </select>
+                    <select name="ordenacao" class="form-select" aria-label="Ordenar produtos">
+                        <option value="pedidos-desc" selected="@(Model.Ordenacao == "pedidos-desc" ? "selected" : null)">Mais pedidos</option>
+                        <option value="pedidos-asc" selected="@(Model.Ordenacao == "pedidos-asc" ? "selected" : null)">Menos pedidos</option>
+                        <option value="preco-asc" selected="@(Model.Ordenacao == "preco-asc" ? "selected" : null)">Menor preço</option>
+                        <option value="preco-desc" selected="@(Model.Ordenacao == "preco-desc" ? "selected" : null)">Maior preço</option>
+                    </select>
+                    <button type="submit" class="filter-button">⚙ Filtrar</button>
+                </form>
+            </div>
+
+            @if (!Model.Produtos.Any())
+            {
+                <div class="empty-state">
+                    🧁
+                    <strong>Nenhum produto encontrado</strong>
+                    <span>Tente selecionar outra categoria.</span>
+                </div>
+            }
+            else
+            {
+                <div class="product-grid">
+                    @foreach (var produto in Model.Produtos)
+                    {
+                        <article class="product-card">
+                            <div class="product-image-wrap">
+                                @if (!string.IsNullOrWhiteSpace(produto.ImagemUrl))
+                                {
+                                    <img src="@produto.ImagemUrl" alt="@produto.Nome" class="product-image" />
+                                }
+                                else
+                                {
+                                    <div class="product-image-placeholder">🧁</div>
+                                }
+                                @if (produto.QuantidadePedidos > 0)
+                                {
+                                    <span class="popular-tag">♥ Popular</span>
+                                }
+                            </div>
+                            <div class="product-content">
+                                <div class="product-meta">
+                                    <span class="product-category">@produto.NomeCategoria</span>
+                                    <span class="product-popularity">@produto.QuantidadePedidos pedido(s)</span>
+                                </div>
+                                <h3>@produto.Nome</h3>
+                                @if (!string.IsNullOrWhiteSpace(produto.Descricao))
+                                {
+                                    <p class="product-description">@produto.Descricao</p>
+                                }
+                                <div class="product-price">@produto.Preco.ToString("C", cultura)</div>
+
+                                @if (Model.FilialId.HasValue)
+                                {
+                                    @if (produto.EstoqueDisponivel.GetValueOrDefault() > 0)
+                                    {
+                                        <small class="stock-available">✓ @produto.EstoqueDisponivel disponível(is)</small>
+                                        <form asp-action="Adicionar" method="post" class="add-product-form">
+                                            <input type="hidden" name="produtoId" value="@produto.ProdutoId" />
+                                            <input type="hidden" name="filialId" value="@Model.FilialId" />
+                                            <input type="hidden" name="categoriaId" value="@Model.CategoriaId" />
+                                            <input type="hidden" name="ordenacao" value="@Model.Ordenacao" />
+                                            <div class="product-buy-row">
+                                                <div class="quantity-control" data-quantity-control>
+                                                    <button type="button" data-quantity-step="-1" aria-label="Diminuir quantidade">−</button>
+                                                    <input type="number" name="quantidade" value="1" min="1" max="@produto.EstoqueDisponivel" inputmode="numeric" aria-label="Quantidade de @produto.Nome" />
+                                                    <button type="button" data-quantity-step="1" aria-label="Aumentar quantidade">+</button>
+                                                </div>
+                                                <button type="submit" class="add-button">+ Adicionar</button>
+                                            </div>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <small class="stock-unavailable">⚠ Indisponível nesta loja</small>
+                                        <button type="button" class="add-button add-button-disabled" disabled>Sem estoque</button>
+                                    }
+                                }
+                                else
+                                {
+                                    <small class="stock-waiting">🏬 Selecione uma loja para consultar o estoque</small>
+                                    <button type="button" class="add-button add-button-disabled" disabled>Escolha uma loja</button>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </main>
+
+        <!-- CARRINHO LATERAL -->
+        <aside class="catalog-sidebar cart-sidebar">
+            <div class="sidebar-heading cart-sidebar-heading">
+                <div>
+                    <span class="section-kicker">SEU PEDIDO</span>
+                    <h2>Meu carrinho</h2>
+                </div>
+                <span class="sidebar-count">@Model.QuantidadeItensCarrinho</span>
+            </div>
+
+            @if (!Model.ItensCarrinho.Any())
+            {
+                <div class="cart-empty-state">
+                    <div class="cart-empty-icon">🧺</div>
+                    <strong>Seu carrinho está vazio</strong>
+                    <span>Adicione seus cupcakes favoritos e eles aparecerão aqui.</span>
+                </div>
+            }
+            else
+            {
+                <div class="cart-branch-label">
+                    🏬
+                    <span>@Model.NomeFilialCarrinho</span>
+                    @if (Model.CarrinhoFilialDisponivel)
+                    {
+                        <span class="mini-status open">Ativa</span>
+                    }
+                    else
+                    {
+                        <span class="mini-status closed">Indisponível</span>
+                    }
+                </div>
+
+                <div class="cart-items-list">
+                    @foreach (var item in Model.ItensCarrinho)
+                    {
+                        <div class="cart-line-item">
+                            @if (!string.IsNullOrWhiteSpace(item.ImagemUrl))
+                            {
+                                <img src="@item.ImagemUrl" alt="@item.Nome" />
+                            }
+                            else
+                            {
+                                <div class="cart-line-placeholder">🧁</div>
+                            }
+                            <div class="cart-line-info">
+                                <strong>@item.Nome</strong>
+                                <span>@item.Quantidade × @item.PrecoUnitario.ToString("C", cultura)</span>
+                                @if (!item.Disponivel)
+                                {
+                                    <small class="stock-unavailable">Indisponível</small>
+                                }
+                                else
+                                {
+                                    <small class="stock-available">Disponível</small>
+                                }
+                                <b>@item.TotalItem.ToString("C", cultura)</b>
+                            </div>
+                            <form asp-action="RemoverItem" method="post" class="remove-cart-item-form">
+                                <input type="hidden" name="produtoId" value="@item.ProdutoId" />
+                                <input type="hidden" name="filialId" value="@Model.FilialId" />
+                                <input type="hidden" name="categoriaId" value="@Model.CategoriaId" />
+                                <input type="hidden" name="ordenacao" value="@Model.Ordenacao" />
+                                <button type="submit" class="remove-cart-item" title="Remover item" aria-label="Remover @item.Nome do carrinho">×</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+
+                <div class="cart-total-row">
+                    <span>Total parcial</span>
+                    <strong>@Model.TotalCarrinho.ToString("C", cultura)</strong>
+                </div>
+
+                @if (!Model.CarrinhoFilialDisponivel)
+                {
+                    <div class="cart-warning">⚠ A loja deste carrinho não está ativa. Remova os itens ou limpe o carrinho para escolher outra loja.</div>
+                }
+                else if (!Model.CarrinhoTodosItensDisponiveis)
+                {
+                    <div class="cart-warning">⚠ Há itens sem estoque suficiente. Remova os itens indisponíveis para continuar.</div>
+                }
+
+                <a asp-controller="Carrinho" asp-action="Index" class="checkout-button @(Model.CarrinhoPodeFinalizar ? "" : "checkout-button-disabled")" aria-disabled="@(!Model.CarrinhoPodeFinalizar)">
+                    🛍️ Finalizar compra
+                </a>
+
+                <form asp-action="LimparCarrinho" method="post" class="clear-cart-form">
+                    <input type="hidden" name="filialId" value="@Model.FilialId" />
+                    <input type="hidden" name="categoriaId" value="@Model.CategoriaId" />
+                    <input type="hidden" name="ordenacao" value="@Model.Ordenacao" />
+                    <button type="submit" class="clear-cart-button" onclick="return confirm('Deseja realmente esvaziar o carrinho?');">× Limpar carrinho</button>
+                </form>
+            }
+        </aside>
+    </div>
+</div>
+
+<style>
+    .catalog-page { color: #382832; padding: 1.25rem 0 2.5rem; }
+    .catalog-header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem; padding:1.25rem 1.5rem; background:linear-gradient(115deg,#fff8f5,#f8e9ee); border:1px solid #f0dce4; border-radius:18px; }
+    .catalog-eyebrow,.section-kicker { display:block; color:#a05a75; font-size:.68rem; font-weight:800; letter-spacing:.13em; margin-bottom:.3rem; }
+    .catalog-header h1 { margin:0; font-family:Georgia,serif; font-size:2rem; color:#65354c; }
+    .catalog-header p { margin:.25rem 0 0; color:#826d77; }
+    .catalog-header-status { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.5rem; }
+    .selected-store-chip,.cart-count-chip { display:inline-flex; align-items:center; gap:.45rem; border-radius:999px; padding:.6rem .85rem; background:#fff; border:1px solid #edd7e0; color:#75415a; font-size:.82rem; font-weight:700; }
+    .catalog-alert { border-radius:12px; }
+    .catalog-layout { display:grid; grid-template-columns:250px minmax(0,1fr) 310px; align-items:start; gap:1rem; }
+    .catalog-sidebar { min-width:0; background:#fff; border:1px solid #eadde2; border-radius:17px; padding:1rem; box-shadow:0 6px 20px rgba(72,38,54,.045); }
+    .stores-sidebar,.cart-sidebar { position:sticky; top:1rem; max-height:calc(100vh - 2rem); overflow:auto; }
+    .sidebar-heading { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .sidebar-heading h2 { font-family:Georgia,serif; color:#65354c; font-size:1.3rem; margin:0; }
+    .sidebar-count { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 .45rem; border-radius:99px; background:#f8e8ee; color:#914e6b; font-size:.78rem; font-weight:800; }
+    .sidebar-description { color:#8b7880; font-size:.82rem; margin:.55rem 0 .9rem; }
+    .store-list { display:flex; flex-direction:column; gap:.7rem; }
+    .store-card { border:1px solid #eadde2; border-radius:12px; overflow:hidden; background:#fffdfc; }
+    .store-card-selected { border:1.5px solid #bc7892; box-shadow:0 0 0 3px #faeef2; }
+    .store-card-content { display:block; padding:.8rem; color:inherit; text-decoration:none; transition:background .15s; }
+    a.store-card-content:hover { background:#fff6f8; color:inherit; }
+    .store-card-disabled { opacity:.58; cursor:not-allowed; }
+    .store-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:.45rem; margin-bottom:.45rem; }
+    .store-card-top strong { color:#593447; font-size:.9rem; }
+    .store-card-content small { display:block; color:#887780; font-size:.72rem; line-height:1.45; margin-top:.3rem; }
+    .store-card-content small i { color:#a45e79; margin-right:.2rem; }
+    .store-status { display:inline-flex; align-items:center; gap:.28rem; white-space:nowrap; font-size:.65rem; font-weight:800; }
+    .store-status span { display:inline-block; width:7px; height:7px; border-radius:50%; background:#bbb; }
+    .store-status.is-open { color:#287a55; }
+    .store-status.is-open span { background:#3ca675; }
+    .store-status.is-closed { color:#a05a5a; }
+    .store-status.is-closed span { background:#c47b7b; }
+    .selected-store-label,.locked-store-note { display:block; margin-top:.55rem; font-size:.72rem; font-weight:800; color:#9b5873; }
+    .locked-store-note { color:#8f7d84; }
+    .store-hours-details { border-top:1px solid #f0e5e9; padding:.5rem .8rem; font-size:.72rem; color:#806d76; }
+    .store-hours-details summary { cursor:pointer; font-weight:700; color:#9b5873; }
+    .store-hours-details ul { list-style:none; margin:.45rem 0 .1rem; padding:0; }
+    .store-hours-details li { padding:.13rem 0; }
+    .catalog-main { min-width:0; }
+    .choose-store-banner { display:flex; align-items:center; gap:1rem; padding:1rem 1.15rem; margin-bottom:1.1rem; border:1px solid #ead2dc; border-radius:15px; background:#fff7f9; }
+    .choose-store-icon { flex:0 0 45px; height:45px; display:grid; place-items:center; border-radius:13px; background:#f1dce5; color:#934e6b; font-size:1.3rem; }
+    .choose-store-banner strong { display:block; color:#69384e; font-size:1rem; }
+    .choose-store-banner p { margin:.2rem 0 0; color:#806d76; font-size:.82rem; }
+    .cart-store-notice { padding:.75rem .9rem; margin-bottom:1rem; border-radius:12px; background:#f8f0f3; color:#735061; font-size:.82rem; }
+    .catalog-toolbar { display:flex; justify-content:space-between; align-items:end; gap:1rem; margin:0 0 1rem; }
+    .catalog-toolbar h2 { margin:0; font-family:Georgia,serif; font-size:1.55rem; color:#65354c; }
+    .products-count { display:inline-block; margin-top:.25rem; color:#9b858e; font-size:.75rem; }
+    .catalog-filters { display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; }
+    .catalog-filters .form-select { width:auto; min-width:140px; border-color:#e6d7dd; border-radius:10px; font-size:.78rem; color:#644653; }
+    .filter-button { border:0; border-radius:10px; padding:.62rem .8rem; color:white; background:#9b5873; font-size:.78rem; font-weight:700; }
+    .filter-button:hover,.add-button:hover,.checkout-button:hover { filter:brightness(.96); color:white; }
+    .product-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.9rem; }
+    .product-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; background:white; border:1px solid #eadde2; border-radius:15px; box-shadow:0 6px 18px rgba(72,38,54,.045); }
+    .product-image-wrap { height:155px; position:relative; overflow:hidden; background:#f9eef2; }
+    .product-image { width:100%; height:100%; object-fit:cover; transition:transform .25s; }
+    .product-card:hover .product-image { transform:scale(1.035); }
+    .product-image-placeholder { width:100%; height:100%; display:grid; place-items:center; color:#c08aa0; font-size:2.6rem; }
+    .popular-tag { position:absolute; top:.6rem; left:.6rem; border-radius:99px; padding:.25rem .5rem; background:rgba(255,255,255,.93); color:#9b5873; font-size:.65rem; font-weight:800; }
+    .product-content { display:flex; flex:1; flex-direction:column; padding:.8rem; }
+    .product-meta { display:flex; justify-content:space-between; align-items:center; gap:.3rem; }
+    .product-category { color:#a05a75; text-transform:uppercase; letter-spacing:.08em; font-size:.62rem; font-weight:800; }
+    .product-popularity { color:#a38e97; font-size:.62rem; white-space:nowrap; }
+    .product-content h3 { color:#593447; font-family:Georgia,serif; font-size:1.08rem; margin:.35rem 0; }
+    .product-description { color:#8b7b82; font-size:.75rem; line-height:1.4; margin:0 0 .55rem; min-height:2.1em; }
+    .product-price { color:#8e4c68; font-size:1.12rem; font-weight:850; margin:.2rem 0 .35rem; }
+    .stock-available,.stock-unavailable,.stock-waiting { display:block; font-size:.68rem; margin-bottom:.45rem; }
+    .stock-available { color:#32815d; }
+    .stock-unavailable { color:#ad6262; }
+    .stock-waiting { color:#947b86; }
+    .add-product-form { margin-top:auto; }
+    .product-buy-row { display:flex; align-items:center; gap:.4rem; }
+    .quantity-control { display:flex; align-items:center; border:1px solid #ead7df; border-radius:10px; background:#fffafb; height:38px; overflow:hidden; }
+    .quantity-control button { height:100%; width:29px; border:0; background:transparent; color:#94536d; font-size:1.1rem; font-weight:700; }
+    .quantity-control input { width:30px; padding:0; border:0; outline:0; text-align:center; background:transparent; color:#593447; font-size:.78rem; -moz-appearance:textfield; }
+    .quantity-control input::-webkit-outer-spin-button,.quantity-control input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .add-button { flex:1; min-height:38px; display:inline-flex; align-items:center; justify-content:center; gap:.35rem; border:0; border-radius:10px; background:#9b5873; color:white; font-size:.75rem; font-weight:800; padding:.45rem .55rem; }
+    .add-button-disabled { background:#cfc3c8; cursor:not-allowed; }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35rem; min-height:220px; padding:2rem; border:1px dashed #e4cdd7; border-radius:16px; background:#fffafb; color:#8b737e; text-align:center; }
+    .empty-state i { font-size:2rem; color:#bd8299; }
+    .empty-state strong { color:#6a3b51; }
+    .small-empty { min-height:100px; font-size:.8rem; }
+    .cart-sidebar-heading { margin-bottom:.9rem; }
+    .cart-empty-state { display:flex; flex-direction:column; align-items:center; text-align:center; padding:1.7rem .7rem; color:#927d86; }
+    .cart-empty-icon { width:55px; height:55px; display:grid; place-items:center; margin-bottom:.65rem; border-radius:50%; background:#fbf0f4; color:#a96581; font-size:1.5rem; }
+    .cart-empty-state strong { color:#6b4054; font-family:Georgia,serif; }
+    .cart-empty-state span { margin-top:.3rem; font-size:.75rem; line-height:1.4; }
+    .cart-branch-label { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; padding:.55rem .65rem; border-radius:9px; background:#fbf4f6; color:#755165; font-size:.75rem; margin-bottom:.65rem; }
+    .cart-branch-label > span:first-of-type { flex:1; font-weight:700; }
+    .mini-status { border-radius:99px; padding:.15rem .4rem; font-size:.6rem; font-weight:800; }
+    .mini-status.open { background:#e6f4ed; color:#287a55; }
+    .mini-status.closed { background:#f8e8e8; color:#a05a5a; }
+    .cart-items-list { display:flex; flex-direction:column; gap:.65rem; max-height:430px; overflow:auto; }
+    .cart-line-item { display:flex; align-items:flex-start; gap:.55rem; padding-bottom:.6rem; border-bottom:1px solid #f0e6ea; }
+    .cart-line-item img,.cart-line-placeholder { width:48px; height:48px; flex:0 0 48px; border-radius:9px; object-fit:cover; background:#f8edf1; }
+    .cart-line-placeholder { display:grid; place-items:center; color:#bd8299; font-size:1.25rem; }
+    .cart-line-info { display:flex; min-width:0; flex:1; flex-direction:column; gap:.12rem; }
+    .cart-line-info strong { color:#5d3a4d; font-size:.76rem; line-height:1.3; }
+    .cart-line-info span,.cart-line-info small { color:#907e86; font-size:.66rem; }
+    .cart-line-info b { color:#8c4e68; font-size:.74rem; }
+    .cart-line-info small.stock-available { color:#32815d; }
+    .cart-line-info small.stock-unavailable { color:#ad6262; }
+    .remove-cart-item-form { margin:0; }
+    .remove-cart-item { display:grid; place-items:center; width:28px; height:28px; border:0; border-radius:8px; background:#fff1f2; color:#b15f68; }
+    .cart-total-row { display:flex; justify-content:space-between; gap:.5rem; padding:1rem 0 .7rem; color:#755d68; font-size:.82rem; }
+    .cart-total-row strong { color:#62374d; font-size:1.05rem; }
+    .cart-warning { padding:.6rem .65rem; margin-bottom:.6rem; border-radius:9px; background:#fff4e5; color:#8f6530; font-size:.7rem; line-height:1.4; }
+    .checkout-button { display:flex; align-items:center; justify-content:center; gap:.4rem; width:100%; padding:.75rem; border-radius:11px; background:#8e4d68; color:#fff; text-decoration:none; font-size:.82rem; font-weight:800; }
+    .checkout-button-disabled { pointer-events:none; opacity:.45; }
+    .clear-cart-form { margin-top:.5rem; }
+    .clear-cart-button { width:100%; padding:.55rem; border:1px solid #ead7df; border-radius:10px; background:white; color:#9a667d; font-size:.74rem; font-weight:700; }
+    @@media (max-width: 1250px) { .catalog-layout { grid-template-columns:220px minmax(0,1fr) 280px; gap:.7rem; } .product-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @@media (max-width: 980px) { .catalog-layout { grid-template-columns:1fr; } .stores-sidebar,.cart-sidebar { position:static; max-height:none; } .store-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); } .catalog-toolbar { align-items:flex-start; flex-direction:column; } .catalog-filters { width:100%; } }
+    @@media (max-width: 560px) { .catalog-header { align-items:flex-start; flex-direction:column; padding:1rem; } .catalog-header-status { justify-content:flex-start; } .product-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .product-image-wrap { height:125px; } .product-content { padding:.65rem; } .product-content h3 { font-size:.92rem; } .product-description { font-size:.68rem; } .product-buy-row { align-items:stretch; flex-direction:column; } .quantity-control { justify-content:center; } .catalog-filters .form-select { flex:1; min-width:0; } }
+</style>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-quantity-control]').forEach(function (control) {
+            const input = control.querySelector('input[name="quantidade"]');
+            control.querySelectorAll('[data-quantity-step]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const step = Number(button.dataset.quantityStep || 0);
+                    const min = Number(input.min || 1);
+                    const max = Number(input.max || 999);
+                    const current = Number(input.value || min);
+                    input.value = Math.min(max, Math.max(min, current + step));
+                });
+            });
+        });
+    </script>
+}

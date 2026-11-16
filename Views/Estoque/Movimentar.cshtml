@@ -1,0 +1,110 @@
+﻿@model LojaCupCake.ViewModels.MovimentacaoEstoqueViewModel
+
+@{
+    ViewData["Title"] = "Movimentar estoque";
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Movimentar estoque</h2>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Produto e filial
+        </div>
+
+        <div class="card-body">
+
+            <p>
+                <strong>Filial:</strong> @Model.NomeFilial
+            </p>
+
+            <p class="mb-0">
+                <strong>Produto:</strong> @Model.NomeProduto
+            </p>
+
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Dados da movimentação
+        </div>
+
+        <div class="card-body">
+
+            <form asp-action="Movimentar" method="post">
+
+                <input type="hidden" asp-for="FilialId" />
+                <input type="hidden" asp-for="ProdutoId" />
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Tipo"
+                           class="form-label"></label>
+
+                    <select asp-for="Tipo" class="form-select">
+                        <option value="">Selecione a movimentação</option>
+                        <option value="Entrada">Entrada</option>
+                        <option value="Saida">Saída</option>
+                        <option value="AjusteEntrada">Ajuste de entrada</option>
+                        <option value="AjusteSaida">Ajuste de saída</option>
+                    </select>
+
+                    <span asp-validation-for="Tipo"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Quantidade"
+                           class="form-label"></label>
+
+                    <input asp-for="Quantidade"
+                           type="number"
+                           min="1"
+                           step="1"
+                           class="form-control" />
+
+                    <span asp-validation-for="Quantidade"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Motivo"
+                           class="form-label"></label>
+
+                    <textarea asp-for="Motivo"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Ex.: Reposição de produtos"></textarea>
+
+                    <span asp-validation-for="Motivo"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit" class="btn btn-primary">
+                        Registrar movimentação
+                    </button>
+
+                    <a asp-action="Index"
+                       asp-route-filialId="@Model.FilialId"
+                       class="btn btn-secondary">
+                        Voltar ao estoque
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

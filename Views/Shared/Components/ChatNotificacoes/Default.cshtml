@@ -1,0 +1,54 @@
+@model int
+
+<li class="nav-item d-flex align-items-center">
+    <a class="nav-link text-dark d-flex align-items-center gap-1"
+       asp-controller="Chat"
+       asp-action="Index"
+       id="chatNotificacoesLink"
+       data-contagem-url="@Url.Action("ContarNaoLidas", "Chat")">
+        Mensagens
+        <span id="chatNaoLidasBadge"
+              class="badge rounded-pill bg-danger @(Model == 0 ? "d-none" : "")"
+              aria-live="polite">@Model</span>
+    </a>
+</li>
+
+<script>
+(() => {
+    const link = document.getElementById("chatNotificacoesLink");
+    const badge = document.getElementById("chatNaoLidasBadge");
+    if (!link || !badge) return;
+
+    const url = link.dataset.contagemUrl;
+
+    async function atualizarContagem() {
+        try {
+            const resposta = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!resposta.ok) return;
+            const dados = await resposta.json();
+            const total = Number(dados.total || 0);
+
+            badge.textContent = total > 99 ? "99+" : String(total);
+            badge.classList.toggle("d-none", total <= 0);
+            link.setAttribute("aria-label", total > 0
+                ? `Mensagens, ${total} não lidas`
+                : "Mensagens");
+        } catch {
+            // A navegação continua disponível mesmo se a atualização falhar.
+        }
+    }
+
+    atualizarContagem();
+    window.setInterval(atualizarContagem, 12000);
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) atualizarContagem();
+    });
+    document.addEventListener("chat:atualizar-nao-lidas", atualizarContagem);
+})();
+</script>

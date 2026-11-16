@@ -1,0 +1,124 @@
+﻿@{
+    var controllerAtual = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var actionAtual = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    bool usuarioAutenticado = User.Identity?.IsAuthenticated == true;
+}
+
+@functions {
+    public bool NavAtivo(string controller, string? action = null)
+    {
+        var atualController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        var atualAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+        return string.Equals(atualController, controller, StringComparison.OrdinalIgnoreCase)
+            && (action == null || string.Equals(atualAction, action, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fff8f5" />
+    <title>@ViewData["Title"] - LojaCupCake</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/LojaCupCake.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <nav class="navbar navbar-expand-xl cupcake-navbar">
+            <div class="container-fluid nav-shell">
+                <a class="navbar-brand brand-lockup" asp-area="" asp-controller="Home" asp-action="Index" aria-label="LojaCupCake - Início">
+                    <span class="brand-mark">LC</span>
+                    <span class="brand-name">Loja<span>CupCake</span><small>um carinho em cada mordida</small></span>
+                </a>
+
+                <button class="navbar-toggler nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation" aria-controls="mainNavigation" aria-expanded="false" aria-label="Abrir menu">
+                    <span></span><span></span><span></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="mainNavigation">
+                    <ul class="navbar-nav main-nav me-auto">
+                        <li class="nav-item"><a class="nav-link @(NavAtivo("Home") ? "active" : "")" asp-controller="Home" asp-action="Index" aria-current="@(NavAtivo("Home") ? "page" : null)">Início</a></li>
+                        <li class="nav-item"><a class="nav-link @(NavAtivo("Catalogo") ? "active" : "")" asp-controller="Catalogo" asp-action="Index" aria-current="@(NavAtivo("Catalogo") ? "page" : null)">Cardápio</a></li>
+                        <li class="nav-item"><a class="nav-link @(NavAtivo("Carrinho") ? "active" : "")" asp-controller="Carrinho" asp-action="Index" aria-current="@(NavAtivo("Carrinho") ? "page" : null)">Carrinho</a></li>
+
+                        @if (User.IsInRole("Cliente"))
+                        {
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Pedidos") ? "active" : "")" asp-controller="Pedidos" asp-action="Index">Meus pedidos</a></li>
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Enderecos") ? "active" : "")" asp-controller="Enderecos" asp-action="Index">Endereços</a></li>
+                        }
+
+                        @if (User.IsInRole("Funcionario"))
+                        {
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("AreaFuncionario") ? "active" : "")" asp-controller="AreaFuncionario" asp-action="Index">Minha área</a></li>
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Estoque") ? "active" : "")" asp-controller="Estoque" asp-action="Index">Estoque</a></li>
+                        }
+
+                        @if (User.IsInRole("Administrador"))
+                        {
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Filiais") ? "active" : "")" asp-controller="Filiais" asp-action="Index">Filiais</a></li>
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Categorias") ? "active" : "")" asp-controller="Categorias" asp-action="Index">Categorias</a></li>
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Produtos") ? "active" : "")" asp-controller="Produtos" asp-action="Index">Produtos</a></li>
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Funcionarios") ? "active" : "")" asp-controller="Funcionarios" asp-action="Index">Funcionários</a></li>
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Estoque") ? "active" : "")" asp-controller="Estoque" asp-action="Index">Estoque</a></li>
+                        }
+
+                        @if (User.IsInRole("Administrador") || User.IsInRole("Funcionario"))
+                        {
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("FuncionamentoLoja") || NavAtivo("Funcionamento") ? "active" : "")" asp-controller="FuncionamentoLoja" asp-action="Index">Funcionamento</a></li>
+                        }
+
+                        @if (usuarioAutenticado)
+                        {
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Chat") ? "active" : "")" asp-controller="Chat" asp-action="Index">Mensagens</a></li>
+                        }
+
+                        @await Component.InvokeAsync("GestaoPedidosMenu")
+
+                        @if (User.IsInRole("Administrador"))
+                        {
+                            <li class="nav-item"><a class="nav-link @(NavAtivo("Dashboard") ? "active" : "")" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                        }
+                    </ul>
+
+                    <div class="nav-account">
+                        @if (usuarioAutenticado)
+                        {
+                            <span class="nav-greeting">Olá, <strong>@User.Identity?.Name</strong></span>
+                            <form asp-area="" asp-controller="Conta" asp-action="Logout" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="nav-logout">Sair</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-area="" asp-controller="Conta" asp-action="Login" class="nav-login">Entrar</a>
+                            <a asp-area="" asp-controller="Conta" asp-action="Cadastro" class="nav-register">Criar conta</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="site-main">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <a class="footer-brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">LC</span><span>LojaCupCake</span></a>
+            <p>Feito com carinho para adoçar seus melhores momentos.</p>
+            <span>© @DateTime.Now.Year LojaCupCake · <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacidade</a></span>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

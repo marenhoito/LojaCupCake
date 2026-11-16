@@ -1,0 +1,127 @@
+﻿@model LojaCupCake.ViewModels.PainelFuncionarioViewModel
+
+@{
+    ViewData["Title"] = "Área do Funcionário";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+        <h2>Área do Funcionário</h2>
+        <p class="text-muted">
+            Bem-vindo(a), @Model.NomeCompleto!
+        </p>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Minhas filiais
+        </div>
+
+        <div class="card-body">
+
+            @if (!Model.Filiais.Any())
+            {
+                <div class="alert alert-warning mb-0">
+                    Você não possui vínculos ativos com filiais.
+                    Entre em contato com o administrador.
+                </div>
+            }
+            else
+            {
+                <div class="row">
+
+                    @foreach (var filial in Model.Filiais)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+
+                                    <h5 class="card-title">
+                                        @filial.NomeFilial
+                                    </h5>
+
+                                    <p class="text-muted">
+                                        Filial vinculada
+                                    </p>
+
+                                    <hr />
+
+                                    <h6>Minhas permissões</h6>
+
+                                    <ul class="list-unstyled">
+
+                                        <li>
+                                            @(filial.PodeAprovarPedidos
+                                                                                ? "✓ Aprovar pedidos"
+                                                                                : "✕ Aprovar pedidos")
+                                                                                                  </li>
+
+                                        <li>
+                                            @(filial.PodeCadastrarFuncionarios
+                                                                                ? "✓ Cadastrar funcionários"
+                                                                                : "✕ Cadastrar funcionários")
+                                </li>
+
+                                    </ul>
+
+                                    <a asp-action="Index"
+                                       asp-route-filialId="@filial.FilialId"
+                                       class="btn btn-primary w-100">
+                                        Acessar filial
+                                    </a>
+
+                                </div>
+                            </div>
+                        </div>
+                                }
+
+                </div>
+            }
+
+        </div>
+    </div>
+
+    @if (Model.FilialAtual != null)
+    {
+        <div class="card border-primary mb-4">
+
+            <div class="card-header">
+                Filial de trabalho selecionada
+            </div>
+
+            <div class="card-body">
+
+                <h4>@Model.FilialAtual.NomeFilial</h4>
+
+                <p class="text-muted">
+                    Você está trabalhando nesta filial.
+                </p>
+
+                <hr />
+
+                <h6>Permissões disponíveis</h6>
+
+                <ul>
+                    @if (Model.FilialAtual.PodeAprovarPedidos)
+                    {
+                        <li>Aprovação de pedidos</li>
+                    }
+
+                    @if (Model.FilialAtual.PodeCadastrarFuncionarios)
+                    {
+                        <li>Cadastro de funcionários</li>
+                    }
+
+                    @if (!Model.FilialAtual.PodeAprovarPedidos &&
+                                    !Model.FilialAtual.PodeCadastrarFuncionarios)
+                    {
+                        <li>Consulta das informações da filial</li>
+                    }
+                </ul>
+
+            </div>
+        </div>
+    }
+
+</div>

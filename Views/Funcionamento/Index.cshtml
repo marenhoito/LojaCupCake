@@ -1,0 +1,116 @@
+@model LojaCupCake.ViewModels.FuncionamentoFilialViewModel
+
+@{
+    ViewData["Title"] = "Horários da filial";
+
+    string NomeDia(LojaCupCake.Models.DiaSemana dia) => dia switch
+    {
+        LojaCupCake.Models.DiaSemana.Segunda => "Segunda-feira",
+        LojaCupCake.Models.DiaSemana.Terca => "Terça-feira",
+        LojaCupCake.Models.DiaSemana.Quarta => "Quarta-feira",
+        LojaCupCake.Models.DiaSemana.Quinta => "Quinta-feira",
+        LojaCupCake.Models.DiaSemana.Sexta => "Sexta-feira",
+        LojaCupCake.Models.DiaSemana.Sabado => "Sábado",
+        LojaCupCake.Models.DiaSemana.Domingo => "Domingo",
+        _ => dia.ToString()
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h2 class="mb-1">Horários de funcionamento</h2>
+            <p class="text-muted mb-0">@Model.NomeFilial</p>
+        </div>
+        <a asp-controller="Filiais" asp-action="Index" class="btn btn-outline-secondary">Voltar às filiais</a>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">@TempData["Sucesso"]</div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold">Cadastrar novo horário</div>
+        <div class="card-body">
+            <form asp-controller="Funcionamento" asp-action="Adicionar" method="post">
+                <input asp-for="FilialId" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label asp-for="DiaSemana" class="form-label">Dia da semana</label>
+                        <select asp-for="DiaSemana"
+                                asp-items="Html.GetEnumSelectList<LojaCupCake.Models.DiaSemana>()"
+                                class="form-select">
+                            <option value="">Selecione</option>
+                        </select>
+                        <span asp-validation-for="DiaSemana" class="text-danger"></span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label asp-for="HoraAbertura" class="form-label">Abertura</label>
+                        <input asp-for="HoraAbertura" type="time" class="form-control" />
+                        <span asp-validation-for="HoraAbertura" class="text-danger"></span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label asp-for="HoraFechamento" class="form-label">Fechamento</label>
+                        <input asp-for="HoraFechamento" type="time" class="form-control" />
+                        <span asp-validation-for="HoraFechamento" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Adicionar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Horários cadastrados</div>
+        <div class="card-body p-0">
+            @if (Model.Horarios == null || !Model.Horarios.Any())
+            {
+                <div class="p-4 text-muted">Nenhum horário cadastrado para esta filial.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">Dia</th>
+                                <th>Abertura</th>
+                                <th>Fechamento</th>
+                                <th class="text-end pe-3">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var horario in Model.Horarios)
+                            {
+                                <tr>
+                                    <td class="ps-3">@NomeDia(horario.DiaSemana)</td>
+                                    <td>@horario.HoraAbertura.ToString(@"hh\:mm")</td>
+                                    <td>@horario.HoraFechamento.ToString(@"hh\:mm")</td>
+                                    <td class="text-end pe-3">
+                                        <form asp-controller="Funcionamento" asp-action="Remover" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@horario.FuncionamentoFilialId" />
+                                            <input type="hidden" name="filialId" value="@Model.FilialId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Deseja remover este horário?');">
+                                                Remover
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

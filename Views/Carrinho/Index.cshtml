@@ -1,0 +1,240 @@
+@model LojaCupCake.ViewModels.CarrinhoViewModel
+
+@{
+    ViewData["Title"] = "Meu carrinho";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Meu carrinho</h2>
+
+        <a asp-controller="Catalogo"
+           asp-action="Index"
+           class="btn btn-outline-primary">
+            Continuar comprando
+        </a>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Sucesso"]
+        </div>
+    }
+
+    @if (TempData["Erro"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Erro"]
+        </div>
+    }
+
+    @if (!Model.Itens.Any())
+    {
+        <div class="alert alert-info">
+            Seu carrinho está vazio.
+        </div>
+    }
+    else
+    {
+        @if (!Model.FilialDisponivel)
+        {
+            <div class="alert alert-danger">
+                A filial do carrinho está indisponível.
+                Esvazie o carrinho para selecionar outra filial.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <strong>Filial:</strong> @Model.NomeFilial
+            </div>
+        }
+
+        @if (ViewData["FilialFechada"] is bool filialFechada && filialFechada)
+        {
+            <div class="alert alert-warning">
+                <strong>Loja fechada.</strong> @ViewData["StatusFuncionamentoFilial"]. Você pode remover itens ou esvaziar o carrinho, mas não pode finalizar o pedido enquanto a loja estiver fechada.
+            </div>
+        }
+        else if (!Model.TodosItensDisponiveis)
+        {
+            <div class="alert alert-warning">
+                Alguns produtos estão indisponíveis ou possuem
+                quantidade superior ao estoque atual.
+                Ajuste o carrinho antes de continuar.
+            </div>
+        }
+
+        <div class="table-responsive">
+
+            <table class="table table-striped table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Preço unitário</th>
+                        <th>Quantidade</th>
+                        <th>Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var item in Model.Itens)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+
+                                    @if (!string.IsNullOrWhiteSpace(item.ImagemUrl))
+                                    {
+                                        <img src="@item.ImagemUrl"
+                                             alt="@item.NomeProduto"
+                                             style="width: 65px; height: 65px; object-fit: cover;"
+                                             class="rounded" />
+                                    }
+
+                                    <div>
+                                        <strong>@item.NomeProduto</strong>
+                                        <br />
+                                        <small class="text-muted">
+                                            @item.Codigo
+                                        </small>
+                                    </div>
+
+                                </div>
+                            </td>
+
+                            <td>
+                                @item.PrecoUnitario.ToString(
+                                "C",
+                                                System.Globalization.CultureInfo.GetCultureInfo("pt-BR")
+                                                )
+                    </td>
+
+                    <td>
+                        @if (item.ProdutoDisponivel)
+                                {
+                                    <form asp-action="AtualizarQuantidade"
+                                          method="post"
+                                          class="d-flex gap-2">
+
+                                        <input type="hidden"
+                                               name="produtoId"
+                                               value="@item.ProdutoId" />
+
+                                        <input type="number"
+                                               name="quantidade"
+                                               value="@item.Quantidade"
+                                               min="1"
+                                               max="@item.EstoqueDisponivel"
+                                               class="form-control"
+                                               style="width: 90px;" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-primary">
+                                            Atualizar
+                                        </button>
+
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">
+                                        Indisponível
+                                    </span>
+                                }
+
+                                <small class="text-muted">
+                                    Estoque: @item.EstoqueDisponivel
+                                </small>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    @item.TotalItem.ToString(
+                                    "C",
+                                                        System.Globalization.CultureInfo.GetCultureInfo("pt-BR")
+                                                        )
+                        </strong>
+                    </td>
+
+                    <td>
+                        <form asp-action="Remover"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="produtoId"
+                                   value="@item.ProdutoId" />
+
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger">
+                                Remover
+                            </button>
+
+                        </form>
+                    </td>
+
+                </tr>
+                                }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <h5 class="mb-0">
+                        Subtotal
+                    </h5>
+
+                    <h4 class="text-primary mb-0">
+                        @Model.Subtotal.ToString(
+                        "C",
+                                        System.Globalization.CultureInfo.GetCultureInfo("pt-BR")
+                                        )
+                </h4>
+
+            </div>
+
+            <div class="d-flex justify-content-between mt-3">
+
+                <form asp-action="Limpar" method="post">
+                    <button type="submit"
+                            class="btn btn-outline-danger">
+                        Esvaziar carrinho
+                    </button>
+                </form>
+
+                @if (Model.FilialDisponivel && Model.TodosItensDisponiveis)
+                    {
+                        <a asp-controller="Checkout"
+                           asp-action="Index"
+                           class="btn btn-primary">
+                            Finalizar pedido
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="btn btn-primary"
+                                disabled>
+                            @(ViewData["FilialFechada"] is bool lojaFechada && lojaFechada ? "Loja fechada" : "Revise os produtos")
+                        </button>
+                    }
+
+            </div>
+
+        </div>
+    </div>
+        }
+
+</div>

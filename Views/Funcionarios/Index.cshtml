@@ -1,0 +1,110 @@
+﻿@model IEnumerable<LojaCupCake.Models.Funcionario>
+
+@{
+    ViewData["Title"] = "Funcionários";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Funcionários</h2>
+        <a asp-action="Create" class="btn btn-primary">Novo funcionário</a>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">@TempData["Sucesso"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Nenhum funcionário cadastrado.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Matrícula</th>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Filiais e permissões</th>
+                        <th>Situação</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var funcionario in Model)
+                    {
+                        <tr>
+                            <td>@funcionario.Matricula</td>
+                            <td>@funcionario.NomeCompleto</td>
+                            <td>@funcionario.Usuario.Email</td>
+                            <td>
+                                @{
+                                    var vinculosAtivos = funcionario.Filiais
+                                    .Where(v => v.Ativo)
+                                    .ToList();
+                                }
+
+                                @if (!vinculosAtivos.Any())
+                                {
+                                    <span class="text-muted">Nenhuma filial vinculada</span>
+                                }
+                                else
+                                {
+                                    @foreach (var vinculo in vinculosAtivos)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>@vinculo.Filial.Nome</strong>
+                                            @if (!vinculo.Filial.Ativo)
+                                            {
+                                                <span class="badge bg-secondary">Filial desativada</span>
+                                            }
+                                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                                @if (vinculo.PodeAprovarPedidos)
+                                                {
+                                                    <span class="badge bg-light text-dark border">Aprovar pedidos</span>
+                                                }
+                                                @if (vinculo.PodeCadastrarFuncionarios)
+                                                {
+                                                    <span class="badge bg-light text-dark border">Cadastrar funcionários</span>
+                                                }
+                                                @if (vinculo.PodeControlarFuncionamento)
+                                                {
+                                                    <span class="badge bg-info text-dark">Controlar funcionamento</span>
+                                                }
+                                                @if (!vinculo.PodeAprovarPedidos &&
+                                                                                !vinculo.PodeCadastrarFuncionarios &&
+                                                                                !vinculo.PodeControlarFuncionamento)
+                                                {
+                                                    <span class="text-muted small">Sem permissões especiais</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                @if (funcionario.Ativo)
+                                {
+                                    <span class="badge bg-success">Ativo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inativo</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit"
+                                   asp-route-id="@funcionario.FuncionarioId"
+                                   class="btn btn-sm btn-outline-primary">Editar</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

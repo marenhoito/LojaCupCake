@@ -1,0 +1,100 @@
+﻿@model LojaCupCake.ViewModels.HistoricoEstoqueViewModel
+
+@{
+    ViewData["Title"] = "Histórico de estoque";
+}
+
+<div class="container mt-4">
+
+    <h2>Histórico de movimentações</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <p><strong>Filial:</strong> @Model.NomeFilial</p>
+            <p><strong>Produto:</strong> @Model.NomeProduto</p>
+            <p class="mb-0"><strong>Código:</strong> @Model.CodigoProduto</p>
+        </div>
+    </div>
+
+    @if (!Model.Movimentacoes.Any())
+    {
+        <div class="alert alert-info">
+            Nenhuma movimentação registrada para este produto nesta filial.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Quantidade</th>
+                        <th>Saldo anterior</th>
+                        <th>Saldo posterior</th>
+                        <th>Responsável</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var movimentacao in Model.Movimentacoes)
+                    {
+                        <tr>
+                            <td>
+                                @movimentacao.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </td>
+
+                            <td>
+                                @switch (movimentacao.Tipo)
+                                {
+                                    case LojaCupCake.Models.TipoMovimentacaoEstoque.Entrada:
+                                        <span class="badge bg-success">Entrada</span>
+                                        break;
+
+                                    case LojaCupCake.Models.TipoMovimentacaoEstoque.Saida:
+                                        <span class="badge bg-danger">Saída</span>
+                                        break;
+
+                                    case LojaCupCake.Models.TipoMovimentacaoEstoque.AjusteEntrada:
+                                        <span class="badge bg-info text-dark">Ajuste de entrada</span>
+                                        break;
+
+                                    case LojaCupCake.Models.TipoMovimentacaoEstoque.AjusteSaida:
+                                        <span class="badge bg-warning text-dark">Ajuste de saída</span>
+                                        break;
+                                }
+                        </td>
+
+                        <td>@movimentacao.Quantidade</td>
+
+                        <td>@movimentacao.SaldoAnterior</td>
+
+                        <td>
+                            <strong>@movimentacao.SaldoPosterior</strong>
+                        </td>
+
+                        <td>@movimentacao.NomeResponsavel</td>
+
+                        <td>
+                            @(string.IsNullOrWhiteSpace(movimentacao.Motivo)
+                                                    ? "Não informado"
+                                                    : movimentacao.Motivo)
+                    </td>
+                </tr>
+                                }
+                </tbody>
+
+            </table>
+        </div>
+    }
+
+    <a asp-action="Index"
+       asp-route-filialId="@Model.FilialId"
+       class="btn btn-secondary">
+        Voltar ao estoque
+    </a>
+
+</div>

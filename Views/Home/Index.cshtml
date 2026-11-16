@@ -1,0 +1,140 @@
+@model LojaCupCake.ViewModels.HomeIndexViewModel
+
+@{
+    ViewData["Title"] = "Início";
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+}
+
+<div class="home-page">
+    <section class="home-hero">
+        <div class="home-hero-content">
+            <span class="eyebrow"><span class="eyebrow-dot"></span> Feito para adoçar o seu dia</span>
+            <h1>Um cupcake muda o dia.<br /><em>Dois deixam inesquecível.</em></h1>
+            <p>Descubra sabores preparados com carinho, escolha sua loja favorita e receba aquele momento gostoso onde você estiver.</p>
+            <div class="hero-actions">
+                <a asp-controller="Catalogo" asp-action="Index" class="btn btn-cupcake-primary">Explorar cardápio <span aria-hidden="true">→</span></a>
+                <a href="#lojas" class="btn btn-cupcake-light">Encontrar uma loja</a>
+            </div>
+            <div class="hero-proof">
+                <span class="proof-icon">♡</span>
+                <span>Preparado com carinho em cada detalhe</span>
+            </div>
+        </div>
+        <div class="home-hero-art" aria-label="Ilustração decorativa de cupcake">
+            <div class="hero-art-circle hero-art-circle-one"></div>
+            <div class="hero-art-circle hero-art-circle-two"></div>
+            <div class="hero-cupcake">🧁</div>
+            <div class="hero-spark hero-spark-one">✦</div>
+            <div class="hero-spark hero-spark-two">✧</div>
+            <div class="hero-note">feito com<br /><strong>amor</strong></div>
+            <div class="hero-art-caption">Pequenas delícias,<br />grandes momentos.</div>
+        </div>
+    </section>
+
+    <section class="home-benefits" aria-label="Diferenciais da LojaCupCake">
+        <div class="benefit-item"><span class="benefit-icon">✿</span><div><strong>Sabores especiais</strong><small>Para todos os momentos</small></div></div>
+        <div class="benefit-item"><span class="benefit-icon">⌖</span><div><strong>Lojas perto de você</strong><small>Escolha sua unidade</small></div></div>
+        <div class="benefit-item"><span class="benefit-icon">♡</span><div><strong>Pedido fácil</strong><small>Entrega ou retirada</small></div></div>
+    </section>
+
+    <section class="home-section" id="mais-vendidos">
+        <div class="section-heading">
+            <div>
+                <span class="section-kicker">Favoritos da casa</span>
+                <h2>Os queridinhos <em>do momento</em></h2>
+                <p>Uma seleção para começar sua próxima experiência deliciosa.</p>
+            </div>
+            <a asp-controller="Catalogo" asp-action="Index" class="section-link">Ver cardápio completo <span>→</span></a>
+        </div>
+
+        @if (!Model.ProdutosMaisVendidos.Any())
+        {
+            <div class="home-empty-state">
+                <span>🧁</span>
+                <div><strong>Nosso cardápio está sendo preparado.</strong><p>Em breve você verá por aqui os cupcakes disponíveis.</p></div>
+                <a asp-controller="Catalogo" asp-action="Index" class="btn btn-cupcake-outline">Visitar cardápio</a>
+            </div>
+        }
+        else
+        {
+            @if (!Model.PossuiVendasConcluidas)
+            {
+                <div class="home-note">Conheça alguns produtos disponíveis. Os mais vendidos aparecerão aqui conforme as vendas forem concluídas.</div>
+            }
+            <div class="product-showcase-grid">
+                @foreach (var produto in Model.ProdutosMaisVendidos)
+                {
+                    <article class="home-product-card">
+                        <a asp-controller="Catalogo" asp-action="Index" class="product-image-wrap" aria-label="Ver @produto.Nome no cardápio">
+                            @if (!string.IsNullOrWhiteSpace(produto.ImagemUrl))
+                            {
+                                <img src="@produto.ImagemUrl" alt="@produto.Nome" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="product-image-placeholder"><span>🧁</span><small>Uma delícia esperando por você</small></div>
+                            }
+                            @if (Model.PossuiVendasConcluidas && produto.QuantidadeVendida > 0)
+                            {
+                                <span class="product-ribbon">Mais pedido</span>
+                            }
+                        </a>
+                        <div class="home-product-info">
+                            <div class="product-card-topline"><span>LOJACUPCAKE</span>@if (produto.QuantidadeVendida > 0) { <span>@produto.QuantidadeVendida vendidos</span> }</div>
+                            <h3>@produto.Nome</h3>
+                            <p>@(string.IsNullOrWhiteSpace(produto.Descricao) ? "Uma combinação deliciosa para adoçar seu dia." : produto.Descricao)</p>
+                            <div class="product-card-bottom">
+                                <strong>@produto.Preco.ToString("C", cultura)</strong>
+                                <a asp-controller="Catalogo" asp-action="Index" class="product-arrow" aria-label="Ver no cardápio">↗</a>
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="stores-section" id="lojas">
+        <div class="section-heading">
+            <div>
+                <span class="section-kicker">Perto de você</span>
+                <h2>Nossas <em>lojas</em></h2>
+                <p>Escolha uma unidade para consultar o cardápio e fazer seu pedido.</p>
+            </div>
+            <a asp-controller="Catalogo" asp-action="Index" class="section-link">Escolher loja <span>→</span></a>
+        </div>
+
+        @if (!Model.LojasDestaque.Any())
+        {
+            <div class="home-empty-state"><span>📍</span><div><strong>Estamos chegando!</strong><p>Nenhuma loja ativa está disponível no momento.</p></div></div>
+        }
+        else
+        {
+            <div class="store-showcase-grid">
+                @foreach (var loja in Model.LojasDestaque)
+                {
+                    <article class="home-store-card">
+                        <div class="store-card-icon">⌖</div>
+                        <div class="store-card-body">
+                            <div class="store-card-topline"><span class="store-status-dot"></span> Unidade ativa</div>
+                            <h3>@loja.Nome</h3>
+                            <p>@loja.Bairro · @loja.Cidade/@loja.Uf</p>
+                            <small>@loja.Logradouro, @loja.Numero</small>
+                            @if (!string.IsNullOrWhiteSpace(loja.Telefone)) { <small>@loja.Telefone</small> }
+                        </div>
+                        <div class="store-card-footer">
+                            <span>@loja.PedidosConcluidos pedido(s) concluído(s)</span>
+                            <a asp-controller="Catalogo" asp-action="Index" class="store-arrow" aria-label="Ver cardápio da loja">→</a>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="home-bottom-cta">
+        <div><span class="section-kicker">Seu próximo momento favorito</span><h2>Qual vai ser o seu <em>próximo sabor?</em></h2><p>Escolha, peça e aproveite. A parte difícil vai ser decidir.</p></div>
+        <a asp-controller="Catalogo" asp-action="Index" class="btn btn-cupcake-primary">Quero escolher <span>→</span></a>
+        <div class="cta-decoration" aria-hidden="true">✦</div>
+    </section>
+</div>

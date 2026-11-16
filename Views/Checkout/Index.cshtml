@@ -1,0 +1,407 @@
+@model LojaCupCake.ViewModels.CheckoutViewModel
+
+@{
+    ViewData["Title"] = "Finalizar pedido";
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+
+    // A taxa configurada é enviada pelo CheckoutController, mesmo quando
+    // a modalidade inicial selecionada é retirada.
+    var taxaEntregaConfigurada = ViewData["TaxaEntregaConfigurada"] is decimal taxaConfigurada
+        ? taxaConfigurada
+        : Model.TaxaEntrega;
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Finalizar pedido</h2>
+
+    <div asp-validation-summary="ModelOnly"
+         class="alert alert-danger"></div>
+
+    @if (!Model.FilialDisponivel)
+    {
+        <div class="alert alert-danger">
+            A filial selecionada não está mais disponível.
+        </div>
+    }
+
+    @if (ViewData["FilialFechada"] is bool fechada && fechada)
+    {
+        <div class="alert alert-warning">
+            <strong>Loja fechada.</strong> @ViewData["StatusFuncionamentoFilial"]. A loja continuará visível, mas não aceita pedidos enquanto estiver fechada.
+        </div>
+    }
+    else if (!Model.TodosItensDisponiveis)
+    {
+        <div class="alert alert-warning">
+            Existem produtos com estoque insuficiente ou indisponíveis.
+            Volte ao carrinho para revisar os itens.
+        </div>
+    }
+
+    <form asp-action="Finalizar" method="post">
+
+        <div class="card mb-4">
+            <div class="card-header">
+                Resumo da compra
+            </div>
+
+            <div class="card-body">
+
+                <p>
+                    <strong>Filial:</strong> @Model.NomeFilial
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table align-middle">
+
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Preço unitário</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in Model.Itens)
+                            {
+                                <tr>
+                                    <td>
+                                        @item.NomeProduto
+
+                                        @if (!item.Disponivel)
+                                        {
+                                            <span class="badge bg-danger">
+                                                Indisponível
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>@item.Quantidade</td>
+
+                                    <td>@item.PrecoUnitario.ToString("C", cultura)</td>
+
+                                    <td>@item.TotalItem.ToString("C", cultura)</td>
+                                </tr>
+                            }
+                        </tbody>
+
+                    </table>
+                </div>
+
+                <div class="text-end"
+                     id="resumoValoresCheckout"
+                     data-subtotal="@Model.Subtotal.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                     data-taxa-entrega="@taxaEntregaConfigurada.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                    <p>
+                        Subtotal:
+                        <strong>@Model.Subtotal.ToString("C", cultura)</strong>
+                    </p>
+
+                    <p id="linhaTaxaEntrega"
+                       style="@(Model.TipoRecebimento == LojaCupCake.Models.TipoRecebimento.Entrega ? "" : "display:none;")">
+                        Taxa de entrega:
+                        <strong id="valorTaxaEntrega">@taxaEntregaConfigurada.ToString("C", cultura)</strong>
+                    </p>
+
+                    <h4 class="text-primary">
+                        Total: <span id="totalCheckout">@Model.Total.ToString("C", cultura)</span>
+                    </h4>
+
+                    <small id="avisoRetirada" class="text-success"
+                           style="@(Model.TipoRecebimento == LojaCupCake.Models.TipoRecebimento.Retirada ? "" : "display:none;")">
+                        Retirada na loja: sem taxa de entrega.
+                    </small>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                Modalidade de recebimento
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="TipoRecebimento"
+                           class="form-label">
+                    </label>
+
+                    <select asp-for="TipoRecebimento"
+                            class="form-select">
+                        <option value="Entrega">Entrega</option>
+                        <option value="Retirada">Retirada na loja</option>
+                    </select>
+
+                    <span asp-validation-for="TipoRecebimento"
+                          class="text-danger"></span>
+
+                    <small class="text-muted">
+                        Na retirada, você receberá um código para apresentar na filial.
+                    </small>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                Endereço de entrega
+            </div>
+
+            <div class="card-body">
+
+                <p class="text-muted">
+                    Selecione um endereço cadastrado ou escolha
+                    a opção de informar outro endereço.
+                    Esta seção será ignorada para retirada.
+                </p>
+
+                <div class="mb-3">
+                    <label asp-for="EnderecoId"
+                           class="form-label">
+                    </label>
+
+                    <select asp-for="EnderecoId"
+                            asp-items="Model.Enderecos"
+                            class="form-select">
+                        <option value="">
+                            Informar outro endereço
+                        </option>
+                    </select>
+
+                    <span asp-validation-for="EnderecoId"
+                          class="text-danger"></span>
+                </div>
+                <div class="mt-2">
+                    <a asp-controller="Enderecos"
+                       asp-action="Index"
+                       target="_blank">
+                        Gerenciar meus endereços
+                    </a>
+                </div>
+
+
+                <hr />
+
+                <h6>Outro endereço</h6>
+
+                <div class="mb-3">
+                    <label asp-for="Destinatario"
+                           class="form-label"></label>
+
+                    <input asp-for="Destinatario"
+                           class="form-control" />
+
+                    <span asp-validation-for="Destinatario"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="TelefoneContato"
+                           class="form-label"></label>
+
+                    <input asp-for="TelefoneContato"
+                           class="form-control" />
+
+                    <span asp-validation-for="TelefoneContato"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Cep"
+                               class="form-label"></label>
+
+                        <input asp-for="Cep"
+                               class="form-control" />
+
+                        <span asp-validation-for="Cep"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-8 mb-3">
+                        <label asp-for="Logradouro"
+                               class="form-label"></label>
+
+                        <input asp-for="Logradouro"
+                               class="form-control" />
+
+                        <span asp-validation-for="Logradouro"
+                              class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Numero"
+                               class="form-label"></label>
+
+                        <input asp-for="Numero"
+                               class="form-control" />
+
+                        <span asp-validation-for="Numero"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-8 mb-3">
+                        <label asp-for="Complemento"
+                               class="form-label"></label>
+
+                        <input asp-for="Complemento"
+                               class="form-control" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Bairro"
+                           class="form-label"></label>
+
+                    <input asp-for="Bairro"
+                           class="form-control" />
+
+                    <span asp-validation-for="Bairro"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label asp-for="Cidade"
+                               class="form-label"></label>
+
+                        <input asp-for="Cidade"
+                               class="form-control" />
+
+                        <span asp-validation-for="Cidade"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Uf"
+                               class="form-label"></label>
+
+                        <input asp-for="Uf"
+                               class="form-control"
+                               maxlength="2" />
+
+                        <span asp-validation-for="Uf"
+                              class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PontoReferencia"
+                           class="form-label"></label>
+
+                    <input asp-for="PontoReferencia"
+                           class="form-control" />
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                Pagamento
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="FormaPagamento"
+                           class="form-label">
+                    </label>
+
+                    <select asp-for="FormaPagamento"
+                            class="form-select">
+                        <option value="Pix">PIX</option>
+                        <option value="Cartao">Cartão</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
+
+                    <span asp-validation-for="FormaPagamento"
+                          class="text-danger"></span>
+
+                    <small class="text-muted">
+                        O pagamento será simulado na próxima etapa.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Observacoes"
+                           class="form-label"></label>
+
+                    <textarea asp-for="Observacoes"
+                              class="form-control"
+                              rows="3"></textarea>
+
+                    <span asp-validation-for="Observacoes"
+                          class="text-danger"></span>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    disabled="@(!Model.FilialDisponivel || !Model.TodosItensDisponiveis)">
+                Confirmar pedido
+            </button>
+
+            <a asp-controller="Carrinho"
+               asp-action="Index"
+               class="btn btn-secondary">
+                Voltar ao carrinho
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modalidade = document.getElementById("TipoRecebimento");
+            const resumo = document.getElementById("resumoValoresCheckout");
+            const linhaTaxa = document.getElementById("linhaTaxaEntrega");
+            const total = document.getElementById("totalCheckout");
+            const avisoRetirada = document.getElementById("avisoRetirada");
+
+            if (!modalidade || !resumo || !linhaTaxa || !total) {
+                return;
+            }
+
+            const subtotal = Number(resumo.dataset.subtotal || 0);
+            const taxaEntrega = Number(resumo.dataset.taxaEntrega || 0);
+            const moeda = new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL"
+            });
+
+            function atualizarResumo() {
+                const ehEntrega = modalidade.value === "Entrega";
+                const valorFrete = ehEntrega ? taxaEntrega : 0;
+
+                linhaTaxa.style.display = ehEntrega ? "" : "none";
+                if (avisoRetirada) {
+                    avisoRetirada.style.display = ehEntrega ? "none" : "";
+                }
+
+                total.textContent = moeda.format(subtotal + valorFrete);
+            }
+
+            modalidade.addEventListener("change", atualizarResumo);
+            atualizarResumo();
+        });
+    </script>
+}

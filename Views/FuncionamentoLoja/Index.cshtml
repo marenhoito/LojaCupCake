@@ -1,0 +1,72 @@
+@model LojaCupCake.ViewModels.FuncionamentoLojaIndexViewModel
+
+@{
+    ViewData["Title"] = "Funcionamento das lojas";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <span class="text-uppercase small fw-bold" style="letter-spacing:.12em;color:#9b5873">OPERAÇÃO DAS UNIDADES</span>
+            <h2 class="mb-1">Funcionamento das lojas</h2>
+            <p class="text-muted mb-0">O modo automático segue os horários cadastrados no fuso de Brasília.</p>
+        </div>
+        <a asp-controller="Catalogo" asp-action="Index" class="btn btn-outline-secondary">Ver Cardápio</a>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">@TempData["Sucesso"]</div>
+    }
+
+    @if (!Model.Filiais.Any())
+    {
+        <div class="alert alert-info">
+            Nenhuma filial ativa está disponível para seu usuário com permissão de controlar o funcionamento.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var filial in Model.Filiais)
+            {
+                <div class="col-12 col-xl-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                <div>
+                                    <h4 class="mb-1">@filial.Nome</h4>
+                                    <div class="text-muted small">@filial.Endereco</div>
+                                </div>
+                                <span class="badge rounded-pill @(filial.AbertaAgora ? "bg-success" : "bg-danger")">@(filial.AbertaAgora ? "Aberta" : "Fechada")</span>
+                            </div>
+
+                            <div class="rounded p-3 mb-3" style="background:#fbf4f6">
+                                <div class="fw-semibold">@filial.Status</div>
+                                <div class="small text-muted mt-1">Modo: @filial.Modo</div>
+                                <div class="small text-muted">Horário de hoje: @filial.HorariosHoje</div>
+                            </div>
+
+                            <div class="small fw-semibold mb-2">Alterar funcionamento</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <form asp-action="AlterarModo" method="post">
+                                    <input type="hidden" name="filialId" value="@filial.FilialId" />
+                                    <button type="submit" name="modo" value="ForcarAberta" class="btn btn-success btn-sm">Abrir loja</button>
+                                </form>
+                                <form asp-action="AlterarModo" method="post">
+                                    <input type="hidden" name="filialId" value="@filial.FilialId" />
+                                    <button type="submit" name="modo" value="ForcarFechada" class="btn btn-danger btn-sm">Fechar loja</button>
+                                </form>
+                                <form asp-action="AlterarModo" method="post">
+                                    <input type="hidden" name="filialId" value="@filial.FilialId" />
+                                    <button type="submit" name="modo" value="Automatico" class="btn btn-outline-secondary btn-sm">Retornar ao automático</button>
+                                </form>
+                            </div>
+                            <p class="small text-muted mt-3 mb-0">A alteração manual permanece ativa até selecionar outro modo. A desativação administrativa continua bloqueando a loja em qualquer modo.</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

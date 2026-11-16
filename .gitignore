@@ -1,0 +1,19 @@
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Arquivos compilados
+**/bin/
+**/obj/
+**/TestResults/
+
+# Configurações locais
+**/appsettings.Development.json
+.env
+.env.*
+
+# Logs e temporários
+*.log
+.DS_Store

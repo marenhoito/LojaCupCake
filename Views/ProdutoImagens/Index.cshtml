@@ -1,0 +1,86 @@
+@model LojaCupCake.ViewModels.ProdutoImagens.ProdutoImagemIndexViewModel
+
+@{
+    ViewData["Title"] = "Fotos dos cupcakes";
+}
+
+<div class="catalog-page product-images-admin">
+    <div class="catalog-heading">
+        <span class="section-kicker">Personalize o cardápio</span>
+        <h1>Fotos dos <em>cupcakes</em></h1>
+        <p>Adicione ou troque as imagens que aparecem no catálogo e na página inicial.</p>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">@TempData["Sucesso"]</div>
+    }
+    @if (TempData["Erro"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Erro"]</div>
+    }
+
+    <div class="image-upload-tip">
+        <strong>Como funciona</strong>
+        <span>Formatos aceitos: JPG, PNG e WEBP · Tamanho máximo: 5 MB por imagem.</span>
+        <span>Prefira fotos quadradas ou horizontais, com boa iluminação e o cupcake centralizado.</span>
+    </div>
+
+    @if (!Model.Produtos.Any())
+    {
+        <div class="home-empty-state"><span>🧁</span><div><strong>Nenhum produto cadastrado.</strong><p>Cadastre um cupcake antes de adicionar uma foto.</p></div></div>
+    }
+    else
+    {
+        <div class="product-image-admin-grid">
+            @foreach (var produto in Model.Produtos)
+            {
+                <article class="product-image-admin-card">
+                    <div class="product-image-admin-preview">
+                        @if (!string.IsNullOrWhiteSpace(produto.ImagemUrl))
+                        {
+                            <img src="@produto.ImagemUrl" alt="@produto.Nome" loading="lazy" />
+                            <span class="image-status has-image">Com imagem</span>
+                        }
+                        else
+                        {
+                            <div class="product-image-placeholder"><span>🧁</span><small>Sem imagem cadastrada</small></div>
+                            <span class="image-status no-image">Sem imagem</span>
+                        }
+                    </div>
+                    <div class="product-image-admin-content">
+                        <div class="product-image-code">@produto.Codigo · @(produto.Ativo ? "Ativo" : "Inativo")</div>
+                        <h2>@produto.Nome</h2>
+                        <form asp-controller="ProdutoImagens" asp-action="Upload" method="post" enctype="multipart/form-data" class="product-image-upload-form">
+                            <input type="hidden" name="produtoId" value="@produto.ProdutoId" />
+                            <label for="imagem-@produto.ProdutoId">Escolher foto</label>
+                            <input id="imagem-@produto.ProdutoId" type="file" name="imagem" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control" required />
+                            <button type="submit" class="btn btn-cupcake-primary">@(string.IsNullOrWhiteSpace(produto.ImagemUrl) ? "Enviar imagem" : "Trocar imagem")</button>
+                        </form>
+                        @if (!string.IsNullOrWhiteSpace(produto.ImagemUrl))
+                        {
+                            <form asp-controller="ProdutoImagens" asp-action="Remover" method="post" class="mt-2" onsubmit="return confirm('Deseja remover esta imagem?');">
+                                <input type="hidden" name="produtoId" value="@produto.ProdutoId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Remover imagem</button>
+                            </form>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.product-image-upload-form input[type="file"]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                const file = input.files && input.files[0];
+                if (file && file.size > 5 * 1024 * 1024) {
+                    alert('A imagem deve ter no máximo 5 MB.');
+                    input.value = '';
+                }
+            });
+        });
+    </script>
+}

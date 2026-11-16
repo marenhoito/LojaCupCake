@@ -1,0 +1,238 @@
+@model LojaCupCake.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Entrar";
+}
+
+<div class="login-page">
+    <section class="login-card">
+        <aside class="login-story">
+            <div class="login-story-brand">
+                <span class="login-brand-mark">LC</span>
+                <span>LojaCupCake</span>
+            </div>
+
+            <span class="login-story-kicker">UM CARINHO EM CADA MORDIDA</span>
+            <h1>Que bom ter você <em>de volta!</em></h1>
+            <p>Entre na sua conta para acompanhar seus pedidos e continuar escolhendo seus cupcakes favoritos.</p>
+
+            <div class="login-story-art" aria-hidden="true">
+                <span class="login-art-ring"></span>
+                <span class="login-art-cupcake">🧁</span>
+                <span class="login-art-spark spark-one">✦</span>
+                <span class="login-art-spark spark-two">✧</span>
+            </div>
+
+            <small>Feito com carinho para adoçar seus melhores momentos.</small>
+        </aside>
+
+        <div class="login-form-panel">
+            <div class="login-form-heading">
+                <span class="login-form-kicker">SUA CONTA</span>
+                <h2>Entrar na LojaCupCake</h2>
+                <p>Informe seus dados para acessar sua conta.</p>
+            </div>
+
+            @if (TempData["Sucesso"] != null)
+            {
+                <div class="alert alert-success login-alert">@TempData["Sucesso"]</div>
+            }
+
+            <form asp-controller="Conta" asp-action="Login" method="post" class="login-form">
+                <div asp-validation-summary="ModelOnly" class="text-danger login-validation-summary"></div>
+
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                <div class="login-field">
+                    <label asp-for="Email" class="form-label">E-mail</label>
+                    <input asp-for="Email" class="form-control" type="email" autocomplete="username" placeholder="seuemail@exemplo.com" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="login-field">
+                    <label asp-for="Senha" class="form-label">Senha</label>
+                    <input asp-for="Senha" class="form-control" type="password" autocomplete="current-password" placeholder="Digite sua senha" />
+                    <span asp-validation-for="Senha" class="text-danger"></span>
+                </div>
+
+                <div class="login-remember">
+                    <div class="form-check">
+                        <input asp-for="LembrarDeMim" class="form-check-input" />
+                        <label asp-for="LembrarDeMim" class="form-check-label">Manter conectado</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-cupcake-primary login-submit">Entrar</button>
+            </form>
+
+            <p class="login-register-link">
+                Ainda não tem uma conta?
+                <a asp-controller="Conta" asp-action="Cadastro">Cadastre-se</a>
+            </p>
+        </div>
+    </section>
+</div>
+
+<style>
+    .login-page {
+        width: 100%;
+        max-width: 1080px;
+        margin: 48px auto 70px;
+        padding: 0 24px;
+    }
+
+    .login-card {
+        display: grid;
+        grid-template-columns: .92fr 1.08fr;
+        min-height: 570px;
+        overflow: hidden;
+        border: 1px solid #efdde3;
+        border-radius: 25px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(89, 52, 69, .10);
+    }
+
+    .login-story {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: 0;
+        padding: 42px 43px 30px;
+        overflow: hidden;
+        background: linear-gradient(145deg, #fff0f2 0%, #fff5ec 58%, #f8e8ef 100%);
+    }
+
+    .login-story::before,
+    .login-story::after {
+        position: absolute;
+        border: 1px solid rgba(205, 126, 153, .18);
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+    }
+
+    .login-story::before { width: 360px; height: 360px; top: 220px; left: -140px; }
+    .login-story::after { width: 260px; height: 260px; top: 270px; left: -90px; }
+
+    .login-story-brand {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: #563b48;
+        font-size: 15px;
+        font-weight: 850;
+    }
+
+    .login-brand-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 13px;
+        color: #fff;
+        background: linear-gradient(140deg, #e98aa6, #c94e78);
+        box-shadow: 0 7px 16px rgba(201, 78, 120, .2);
+        font-size: 12px;
+    }
+
+    .login-story-kicker {
+        position: relative;
+        z-index: 1;
+        margin-top: 54px;
+        color: #a65a77;
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 1.8px;
+    }
+
+    .login-story h1 {
+        position: relative;
+        z-index: 1;
+        max-width: 340px;
+        margin: 13px 0 12px;
+        color: #49323e;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(31px, 3.2vw, 43px);
+        font-weight: 500;
+        line-height: 1.12;
+    }
+
+    .login-story h1 em { color: #bd456e; font-weight: 500; }
+    .login-story > p { position: relative; z-index: 1; max-width: 330px; margin: 0; color: #806a75; font-size: 12px; line-height: 1.8; }
+
+    .login-story-art {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 190px;
+        margin-top: auto;
+    }
+
+    .login-art-ring {
+        position: absolute;
+        width: 178px;
+        height: 178px;
+        border: 1px solid rgba(191, 112, 142, .22);
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.9), rgba(244,211,221,.55));
+        box-shadow: 0 16px 34px rgba(163, 93, 119, .10);
+    }
+
+    .login-art-cupcake { position: relative; z-index: 1; font-size: 104px; filter: drop-shadow(0 13px 12px rgba(112, 63, 81, .15)); transform: rotate(-7deg); }
+    .login-art-spark { position: absolute; z-index: 2; color: #d36a91; font-size: 29px; }
+    .spark-one { top: 9px; right: 22%; }
+    .spark-two { bottom: 18px; left: 18%; color: #c49b6e; font-size: 38px; }
+    .login-story > small { position: relative; z-index: 1; color: #987f89; font-size: 9px; }
+
+    .login-form-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+        padding: 54px clamp(30px, 5vw, 64px);
+    }
+
+    .login-form-heading { margin-bottom: 29px; }
+    .login-form-kicker { color: #bd456e; font-size: 9px; font-weight: 850; letter-spacing: 1.8px; }
+    .login-form-heading h2 { margin: 9px 0 7px; color: #49323e; font-family: Georgia, "Times New Roman", serif; font-size: 32px; font-weight: 500; }
+    .login-form-heading p { margin: 0; color: #8b7880; font-size: 12px; }
+    .login-form { display: flex; flex-direction: column; gap: 19px; }
+    .login-field .form-label { display: block; margin-bottom: 7px; color: #644653; font-size: 11px; font-weight: 750; }
+    .login-field .form-control { min-height: 48px; padding: 11px 14px; border: 1px solid #eadde2; border-radius: 11px; color: #49323e; background: #fffdfc; font-size: 12px; }
+    .login-field .form-control:focus { border-color: #d88ca4; box-shadow: 0 0 0 .2rem rgba(217, 91, 131, .13); }
+    .login-field .text-danger { display: block; margin-top: 5px; font-size: 10px; }
+    .login-remember { margin-top: -2px; }
+    .login-remember .form-check-label { color: #806d76; font-size: 11px; }
+    .login-remember .form-check-input { border-color: #d9c4cc; }
+    .login-remember .form-check-input:checked { border-color: #d95b83; background-color: #d95b83; }
+    .login-submit { width: 100%; min-height: 48px; margin-top: 2px; border-radius: 12px; }
+    .login-register-link { margin: 24px 0 0; color: #8b7880; text-align: center; font-size: 11px; }
+    .login-register-link a { color: #bd456e; font-weight: 800; }
+    .login-validation-summary:empty { display: none; }
+    .login-validation-summary { margin-bottom: 2px; font-size: 11px; }
+    .login-alert { margin-bottom: 20px; }
+
+    @@media (max-width: 767.98px) {
+        .login-page { margin: 24px auto 45px; padding: 0 14px; }
+        .login-card { grid-template-columns: 1fr; min-height: 0; border-radius: 20px; }
+        .login-story { min-height: 280px; padding: 27px 25px 20px; }
+        .login-story-kicker { margin-top: 28px; }
+        .login-story h1 { max-width: 420px; font-size: 32px; }
+        .login-story-art { position: absolute; right: 7px; bottom: 0; width: 150px; min-height: 145px; margin: 0; opacity: .72; }
+        .login-art-ring { width: 120px; height: 120px; }
+        .login-art-cupcake { font-size: 72px; }
+        .login-story > small { max-width: 210px; }
+        .login-form-panel { padding: 34px 25px 31px; }
+        .login-form-heading h2 { font-size: 28px; }
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

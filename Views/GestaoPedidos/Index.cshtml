@@ -1,0 +1,307 @@
+﻿@model LojaCupCake.ViewModels.GestaoPedidosIndexViewModel
+
+@{
+    ViewData["Title"] = "Gestão de pedidos";
+
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+}
+
+<div class="container mt-4 gestao-pedidos-page">
+
+    <div class="mb-4">
+        <h2>Gestão de pedidos</h2>
+        <p class="text-muted">
+            Selecione uma filial para consultar e processar seus pedidos.
+        </p>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Sucesso"]
+        </div>
+    }
+
+    @if (TempData["Erro"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Erro"]
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- COLUNA ESQUERDA: FILIAIS -->
+        <aside class="col-lg-4 col-xl-3">
+            <div class="branch-sidebar">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Filiais disponíveis</h5>
+                    <span class="badge bg-secondary">
+                        @Model.Filiais.Count
+                    </span>
+                </div>
+
+                @if (!Model.Filiais.Any())
+                {
+                    <div class="alert alert-warning">
+                        Nenhuma filial disponível para seu perfil.
+                    </div>
+                }
+                else
+                {
+                    @foreach (var filialItem in Model.Filiais)
+                    {
+                        bool selecionada = Model.FilialId == filialItem.FilialId;
+
+                        <a asp-action="Index"
+                           asp-route-filialId="@filialItem.FilialId"
+                           class="branch-select-card @(selecionada ? "selected" : "")">
+
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <h6 class="mb-1">@filialItem.Nome</h6>
+
+                                    @if (filialItem.Ativa)
+                                    {
+                                        <span class="badge bg-success">Ativa</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Desativada</span>
+                                    }
+
+                                    <small class="d-block mt-1">@filialItem.Codigo</small>
+                                </div>
+
+                                @if (filialItem.PedidosPendentes > 0)
+                                {
+                                    <span class="badge bg-danger">
+                                        @filialItem.PedidosPendentes pendentes
+                                    </span>
+                                }
+                            </div>
+
+                            <div class="branch-card-location mt-2">
+                                <small>@filialItem.Cidade/@filialItem.Uf</small>
+                            </div>
+
+                            <div class="branch-card-stats mt-3">
+                                <div>
+                                    <strong>@filialItem.TotalPedidos</strong>
+                                    <small>Total</small>
+                                </div>
+                                <div>
+                                    <strong>@filialItem.PedidosEmAndamento</strong>
+                                    <small>Em andamento</small>
+                                </div>
+                                <div>
+                                    <strong>@filialItem.PedidosConcluidos</strong>
+                                    <small>Concluídos</small>
+                                </div>
+                            </div>
+
+                        </a>
+                    }
+                }
+
+            </div>
+        </aside>
+
+        <!-- COLUNA CENTRAL: DETALHES -->
+        <section class="col-lg-8 col-xl-9">
+
+            @if (Model.FilialSelecionada == null)
+            {
+                <div class="branch-empty-state">
+                    <div class="branch-empty-icon">🏪</div>
+                    <h4>Selecione uma filial</h4>
+                    <p class="text-muted">
+                        Escolha uma das unidades à esquerda para visualizar
+                        os detalhes e os pedidos recebidos.
+                    </p>
+                </div>
+            }
+            else
+            {
+                var filial = Model.FilialSelecionada;
+
+                <!-- INFORMAÇÕES DA FILIAL -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <small class="text-muted">FILIAL SELECIONADA</small>
+                            <h4 class="mb-0">@filial.Nome</h4>
+                        </div>
+
+                        @if (filial.Ativa)
+                        {
+                            <span class="badge bg-success">Unidade ativa</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Unidade desativada</span>
+                        }
+                    </div>
+
+                    @if (!filial.Ativa)
+                    {
+                        <div class="alert alert-secondary rounded-0 mb-0">
+                            Esta filial está desativada para novas vendas. Os pedidos existentes continuam disponíveis para consulta e gestão autorizada.
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6>Endereço</h6>
+                                <p class="mb-1">
+                                    @filial.Logradouro, @filial.Numero
+                                </p>
+
+                                @if (!string.IsNullOrWhiteSpace(filial.Complemento))
+                                {
+                                    <p class="mb-1">@filial.Complemento</p>
+                                }
+
+                            <p class="mb-0 text-muted">
+                                @filial.Bairro - @filial.Cidade/@filial.Uf
+                            </p>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <h6>Contato</h6>
+                            <p class="mb-1">
+                                @(string.IsNullOrWhiteSpace(filial.Telefone)
+                                                                ? "Telefone não informado"
+                                                                : filial.Telefone)
+                                                                              </p>
+                                                                              <p class="mb-0 text-muted">
+                                @(string.IsNullOrWhiteSpace(filial.Email)
+                                                                ? "E-mail não informado"
+                                                                : filial.Email)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <!-- INDICADORES DA FILIAL -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3 col-6">
+                        <div class="branch-metric">
+                            <small>Total de pedidos</small>
+                            <h3>@filial.TotalPedidos</h3>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-6">
+                        <div class="branch-metric pending">
+                            <small>Aguardando</small>
+                            <h3>@filial.PedidosPendentes</h3>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-6">
+                        <div class="branch-metric processing">
+                            <small>Em andamento</small>
+                            <h3>@filial.PedidosEmAndamento</h3>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-6">
+                        <div class="branch-metric completed">
+                            <small>Concluídos</small>
+                            <h3>@filial.PedidosConcluidos</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PEDIDOS -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Pedidos da filial</h5>
+                        <span class="badge bg-primary">
+                            @Model.Pedidos.Count pedidos
+                        </span>
+                    </div>
+
+                    <div class="card-body">
+                    @if (!Model.Pedidos.Any())
+                        {
+                            <div class="alert alert-info mb-0">
+                                Esta filial ainda não possui pedidos.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Cliente</th>
+                                            <th>Data</th>
+                                            <th>Recebimento</th>
+                                            <th>Total</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var pedido in Model.Pedidos)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>@pedido.CodigoPedido</strong>
+                                                </td>
+                                                <td>@pedido.NomeCliente</td>
+                                                <td>
+                                                    @pedido.DataPedido.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                </td>
+                                                <td>@pedido.TipoRecebimento</td>
+                                                <td>@pedido.Total.ToString("C", cultura)</td>
+                                                <td>
+                                                    @switch (pedido.StatusPedido)
+                                                    {
+                                                        case LojaCupCake.Models.StatusPedido.AguardandoAprovacao:
+                                                            <span class="badge bg-warning text-dark">Aguardando</span>
+                                                            break;
+
+                                                        case LojaCupCake.Models.StatusPedido.Aprovado:
+                                                        case LojaCupCake.Models.StatusPedido.EmPreparacao:
+                                                        case LojaCupCake.Models.StatusPedido.Pronto:
+                                                        case LojaCupCake.Models.StatusPedido.SaiuParaEntrega:
+                                                            <span class="badge bg-info text-dark">@pedido.StatusPedido</span>
+                                                            break;
+
+                                                        case LojaCupCake.Models.StatusPedido.Concluido:
+                                                            <span class="badge bg-success">Concluído</span>
+                                                            break;
+
+                                                        case LojaCupCake.Models.StatusPedido.Rejeitado:
+                                                        case LojaCupCake.Models.StatusPedido.Cancelado:
+                                                            <span class="badge bg-danger">@pedido.StatusPedido</span>
+                                                            break;
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a asp-action="Detalhes"
+                                                       asp-route-id="@pedido.PedidoId"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        Detalhes
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+        </section>
+    </div>
+</div>

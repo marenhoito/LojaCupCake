@@ -1,0 +1,122 @@
+﻿@model IEnumerable<LojaCupCake.Models.Endereco>
+
+@{
+    ViewData["Title"] = "Meus endereços";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Meus endereços</h2>
+
+        <a asp-action="Create" class="btn btn-primary">
+            Novo endereço
+        </a>
+    </div>
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Sucesso"]
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            Você ainda não possui endereços cadastrados.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+
+            @foreach (var endereco in Model)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between">
+                                <h5>
+                                    @(endereco.Apelido ?? "Meu endereço")
+                                </h5>
+
+                                @if (endereco.Principal)
+                                {
+                                    <span class="badge bg-success">
+                                        Principal
+                                    </span>
+                                }
+                            </div>
+
+                            <p>
+                                <strong>@endereco.Destinatario</strong>
+                            </p>
+
+                            <p>
+                                @endereco.Logradouro, @endereco.Numero
+                                @if (!string.IsNullOrWhiteSpace(endereco.Complemento))
+                                {
+                                    <span> - @endereco.Complemento</span>
+                                }
+                            </p>
+
+                            <p>
+                                @endereco.Bairro -
+                                @endereco.Cidade/@endereco.Uf
+                                <br />
+                                CEP: @endereco.Cep
+                            </p>
+
+                            <div class="d-flex gap-2 flex-wrap">
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@endereco.EnderecoId"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Editar
+                                </a>
+
+                                @if (!endereco.Principal)
+                                {
+                                    <form asp-action="DefinirPrincipal"
+                                          asp-route-id="@endereco.EnderecoId"
+                                          method="post">
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            Tornar principal
+                                        </button>
+
+                                    </form>
+                                }
+
+                                <form asp-action="AlterarStatus"
+                                      asp-route-id="@endereco.EnderecoId"
+                                      method="post"
+                                      onsubmit="return confirm('Deseja desativar este endereço?');">
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger">
+                                        Desativar
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+
+    <a asp-controller="Pedidos"
+       asp-action="Index"
+       class="btn btn-secondary mt-3">
+        Meus pedidos
+    </a>
+
+</div>

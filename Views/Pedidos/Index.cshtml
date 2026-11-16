@@ -1,0 +1,84 @@
+﻿@model IEnumerable<LojaCupCake.ViewModels.PedidoResumoViewModel>
+
+@{
+    ViewData["Title"] = "Meus pedidos";
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Meus pedidos</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            Você ainda não realizou nenhum pedido.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Data</th>
+                        <th>Filial</th>
+                        <th>Recebimento</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Pagamento</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var pedido in Model)
+                    {
+                        <tr>
+                            <td>@pedido.CodigoPedido</td>
+
+                            <td>
+                                @(pedido.DataPedido.ToLocalTime()
+                                                        .ToString("dd/MM/yyyy HH:mm"))
+                    </td>
+
+                            <td>@pedido.NomeFilial</td>
+
+                            <td>
+                                @pedido.TipoRecebimento
+                            </td>
+
+                            <td>
+                                @pedido.Total.ToString("C", cultura)
+                            </td>
+
+                            <td>@pedido.StatusPedido</td>
+
+                            <td>
+                                @pedido.StatusPagamento
+                            </td>
+
+                            <td>
+                                <a asp-action="Detalhes"
+                                   asp-route-id="@pedido.PedidoId"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Detalhes
+                                </a>
+                            </td>
+                        </tr>
+                                }
+                </tbody>
+
+            </table>
+        </div>
+    }
+
+    <a asp-controller="Catalogo"
+       asp-action="Index"
+       class="btn btn-primary mt-3">
+        Voltar ao catálogo
+    </a>
+
+</div>

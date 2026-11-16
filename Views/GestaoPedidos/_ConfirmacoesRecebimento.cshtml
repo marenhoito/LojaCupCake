@@ -1,0 +1,58 @@
+﻿@model LojaCupCake.Models.Pedido
+
+@* Inclua esta partial na tela Views/GestaoPedidos/Detalhes.cshtml com:
+   <partial name="_ConfirmacoesRecebimento" model="Model" /> *@
+
+@if (Model.TipoRecebimento == LojaCupCake.Models.TipoRecebimento.Retirada &&
+     Model.StatusPedido == LojaCupCake.Models.StatusPedido.Pronto)
+{
+    <div class="card border-warning mb-4">
+        <div class="card-body">
+            <h5>Finalizar retirada</h5>
+            <p class="text-muted">Solicite o código ao cliente e informe-o abaixo para validar a retirada.</p>
+            <form asp-controller="GestaoPedidos" asp-action="ConcluirRetirada" method="post" class="row g-2 align-items-end">
+                <input type="hidden" name="pedidoId" value="@Model.PedidoId" />
+                <div class="col-md-5">
+                    <label for="codigoRetirada" class="form-label">Código apresentado pelo cliente</label>
+                    <input id="codigoRetirada" name="codigoRetirada" class="form-control" maxlength="20" autocomplete="off" required />
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-success">Validar código e concluir retirada</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (Model.TipoRecebimento == LojaCupCake.Models.TipoRecebimento.Entrega &&
+     (Model.StatusPedido == LojaCupCake.Models.StatusPedido.Pronto ||
+      Model.StatusPedido == LojaCupCake.Models.StatusPedido.SaiuParaEntrega) &&
+     !(Model.EntregaConfirmadaPelaLoja && Model.EntregaConfirmadaPeloCliente))
+{
+    <div class="card border-primary mb-4">
+        <div class="card-body">
+            <h5>Confirmação da entrega</h5>
+            <p class="mb-1">Confirmação da loja: <strong>@(Model.EntregaConfirmadaPelaLoja ? "Confirmada" : "Pendente")</strong></p>
+            <p class="mb-3">Confirmação do cliente: <strong>@(Model.EntregaConfirmadaPeloCliente ? "Confirmada" : "Pendente")</strong></p>
+
+            @if (Model.StatusPedido == LojaCupCake.Models.StatusPedido.Pronto)
+            {
+                <div class="alert alert-warning mb-0">
+                    Pedido pronto para entrega. Ao registrar a saída para entrega, as confirmações da loja e do cliente poderão ser feitas.
+                    Esta notificação permanecerá até que ambas as partes confirmem.
+                </div>
+            }
+            else if (!Model.EntregaConfirmadaPelaLoja)
+            {
+                <form asp-controller="GestaoPedidos" asp-action="ConfirmarEntregaLoja" method="post">
+                    <input type="hidden" name="pedidoId" value="@Model.PedidoId" />
+                    <button type="submit" class="btn btn-primary">Confirmar entrega pela loja</button>
+                </form>
+            }
+            else if (!Model.EntregaConfirmadaPeloCliente)
+            {
+                <div class="alert alert-info mb-0">A loja já confirmou. O pedido será concluído quando o cliente confirmar o recebimento.</div>
+            }
+        </div>
+    </div>
+}

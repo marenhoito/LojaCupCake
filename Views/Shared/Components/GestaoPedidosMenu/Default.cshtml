@@ -1,0 +1,27 @@
+﻿@model LojaCupCake.ViewModels.GestaoPedidosMenuViewModel
+
+@if (Model.Exibir)
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark"
+           asp-controller="GestaoPedidos"
+           asp-action="Index">
+
+            Gestão de Pedidos
+
+            @if (Model.PedidosPendentes > 0)
+            {
+                <span class="badge bg-danger">
+                    @Model.PedidosPendentes
+                </span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">
+                    0
+                </span>
+            }
+
+        </a>
+    </li>
+}

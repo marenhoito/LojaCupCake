@@ -1,0 +1,10 @@
+@model LojaCupCake.Models.Pedido
+
+<div class="my-3">
+    <a asp-controller="Chat"
+       asp-action="Pedido"
+       asp-route-id="@Model.PedidoId"
+       class="btn btn-outline-primary">
+        @(User.IsInRole("Cliente") ? "Conversar com a loja" : "Conversar com o cliente")
+    </a>
+</div>

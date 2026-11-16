@@ -1,0 +1,181 @@
+@model LojaCupCake.ViewModels.ChatPedidoViewModel
+@{
+    ViewData["Title"] = "Conversa do pedido";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Conversa do pedido @Model.CodigoPedido</h2>
+            <div class="text-muted">@Model.NomeFilial</div>
+        </div>
+        @if (User.IsInRole("Cliente"))
+        {
+            <a asp-controller="Pedidos" asp-action="Detalhes" asp-route-id="@Model.PedidoId" class="btn btn-outline-secondary">Voltar ao pedido</a>
+        }
+        else
+        {
+            <a asp-controller="GestaoPedidos" asp-action="Detalhes" asp-route-id="@Model.PedidoId" class="btn btn-outline-secondary">Voltar ao pedido</a>
+        }
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>Chat entre cliente e loja</strong>
+            <span id="chatStatus" class="badge bg-secondary">Conectando...</span>
+        </div>
+        <div id="chatMensagens" class="card-body" style="height: 430px; overflow-y: auto; background: #f8f9fa;" aria-live="polite">
+            <div class="text-muted text-center py-4" id="chatVazio">Carregando conversa...</div>
+        </div>
+        <div class="card-footer">
+            <form id="chatForm" class="d-flex gap-2 align-items-end">
+                <label for="chatTexto" class="visually-hidden">Digite sua mensagem</label>
+                <textarea id="chatTexto" class="form-control" rows="2" maxlength="2000" placeholder="Escreva sua mensagem..." required></textarea>
+                <button id="chatEnviar" type="submit" class="btn btn-primary" disabled>Enviar</button>
+            </form>
+            <small class="text-muted">Até 2.000 caracteres. Evite compartilhar dados sensíveis.</small>
+            <div id="chatErro" class="text-danger small mt-2" role="alert"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/signalr/signalr.min.js"></script>
+    <script>
+        (() => {
+            const pedidoId = @Model.PedidoId;
+            const usuarioId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UsuarioId));
+            const lista = document.getElementById("chatMensagens");
+            const vazio = document.getElementById("chatVazio");
+            const status = document.getElementById("chatStatus");
+            const erro = document.getElementById("chatErro");
+            const texto = document.getElementById("chatTexto");
+            const enviar = document.getElementById("chatEnviar");
+            const form = document.getElementById("chatForm");
+
+            if (typeof signalR === "undefined") {
+                status.textContent = "Biblioteca não carregada";
+                status.className = "badge bg-danger";
+                erro.textContent = "Não foi possível carregar o cliente SignalR. Verifique a instalação em wwwroot/js/signalr.";
+                return;
+            }
+
+            function renderizarMensagem(m) {
+                if (vazio) vazio.remove();
+                const propria = m.remetenteUsuarioId === usuarioId;
+                const linha = document.createElement("div");
+                linha.className = "d-flex mb-3 " + (propria ? "justify-content-end" : "justify-content-start");
+                const caixa = document.createElement("div");
+                caixa.className = "p-3 rounded shadow-sm";
+                caixa.style.maxWidth = "80%";
+                caixa.style.backgroundColor = propria ? "#dbeafe" : "#ffffff";
+                const cabecalho = document.createElement("div");
+                cabecalho.className = "small fw-bold mb-1";
+                cabecalho.textContent = propria ? "Você" : (m.remetenteNome || "Atendimento da loja");
+                const corpo = document.createElement("div");
+                corpo.style.whiteSpace = "pre-wrap";
+                corpo.textContent = m.conteudo;
+                const horario = document.createElement("div");
+                horario.className = "text-muted small text-end mt-2";
+                horario.textContent = new Date(m.enviadaEm).toLocaleString("pt-BR");
+                caixa.append(cabecalho, corpo, horario);
+                linha.appendChild(caixa);
+                lista.appendChild(linha);
+                lista.scrollTop = lista.scrollHeight;
+            }
+
+            const conexao = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/chat-pedido")
+                .withAutomaticReconnect()
+                .build();
+
+            conexao.on("HistoricoCarregado", mensagens => {
+                lista.innerHTML = "";
+                if (!mensagens || mensagens.length === 0) {
+                    const aviso = document.createElement("div");
+                    aviso.className = "text-muted text-center py-4";
+                    aviso.textContent = "Nenhuma mensagem ainda. Inicie a conversa.";
+                    lista.appendChild(aviso);
+                    return;
+                }
+                mensagens.forEach(renderizarMensagem);
+            });
+
+            conexao.on("NovaMensagem", async mensagem => {
+                // O servidor distribui por usuário autorizado; cada aba só exibe
+                // mensagens do pedido que está aberta nela.
+                if (!mensagem || Number(mensagem.pedidoId) !== Number(pedidoId)) return;
+
+                renderizarMensagem(mensagem);
+
+                // Se a mensagem chegou enquanto esta conversa está aberta,
+                // registra a leitura imediatamente para este lado.
+                if (mensagem.remetenteUsuarioId !== usuarioId) {
+                    try {
+                        await conexao.invoke("MarcarConversaComoLida", pedidoId);
+                        document.dispatchEvent(new Event("chat:atualizar-nao-lidas"));
+                    } catch (e) {
+                        console.warn("Não foi possível atualizar a leitura da conversa.", e);
+                    }
+                }
+            });
+            conexao.on("MensagensLidas", pedidoLidoId => {
+                if (pedidoLidoId != null && Number(pedidoLidoId) !== Number(pedidoId)) return;
+                document.dispatchEvent(new Event("chat:atualizar-nao-lidas"));
+            });
+            conexao.on("ErroChat", mensagem => { erro.textContent = mensagem; });
+
+            async function entrarNaConversa() {
+                try {
+                    await conexao.invoke("EntrarNoPedido", pedidoId);
+                    status.textContent = "Conectado";
+                    status.className = "badge bg-success";
+                    enviar.disabled = false;
+                    erro.textContent = "";
+                    document.dispatchEvent(new Event("chat:atualizar-nao-lidas"));
+                } catch (e) {
+                    status.textContent = "Sem conexão";
+                    status.className = "badge bg-danger";
+                    erro.textContent = e.message || "Não foi possível acessar a conversa.";
+                }
+            }
+
+            conexao.onreconnecting(() => {
+                status.textContent = "Reconectando...";
+                status.className = "badge bg-warning text-dark";
+                enviar.disabled = true;
+            });
+            conexao.onreconnected(async () => { await entrarNaConversa(); });
+            conexao.onclose(() => {
+                status.textContent = "Desconectado";
+                status.className = "badge bg-danger";
+                enviar.disabled = true;
+            });
+
+            form.addEventListener("submit", async event => {
+                event.preventDefault();
+                const mensagem = texto.value.trim();
+                if (!mensagem) return;
+                enviar.disabled = true;
+                erro.textContent = "";
+                try {
+                    await conexao.invoke("EnviarMensagem", pedidoId, mensagem);
+                    texto.value = "";
+                    texto.focus();
+                } catch (e) {
+                    erro.textContent = e.message || "Não foi possível enviar a mensagem.";
+                } finally {
+                    enviar.disabled = false;
+                }
+            });
+
+            conexao.start()
+                .then(entrarNaConversa)
+                .catch(e => {
+                    status.textContent = "Falha na conexão";
+                    status.className = "badge bg-danger";
+                    erro.textContent = e.message || "Não foi possível conectar ao chat.";
+                });
+        })();
+    </script>
+}
