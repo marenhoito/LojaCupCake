@@ -244,3 +244,262 @@ button, input, select, textarea { font: inherit; }
 .product-image-upload-form .btn { min-height: 40px; font-size: 11px; }
 @media(max-width:991.98px) { .product-image-admin-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width:767.98px) { .product-image-admin-grid { grid-template-columns: 1fr; } }
+
+
+/* =========================================
+   GESTÃO DE PEDIDOS
+========================================= */
+
+.gestao-pedidos-page {
+    max-width: 1440px;
+    padding-top: 20px;
+}
+
+    .gestao-pedidos-page > .mb-4 h2 {
+        color: var(--cupcake-ink);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 36px;
+        font-weight: 600;
+    }
+
+    .gestao-pedidos-page > .mb-4 p {
+        color: var(--cupcake-muted);
+        font-size: 14px;
+    }
+
+/* Painel lateral */
+
+.branch-sidebar {
+    padding: 22px;
+    border: 1px solid var(--cupcake-line);
+    border-radius: 18px;
+    background: #fffaf8;
+}
+
+    .branch-sidebar h5 {
+        color: var(--cupcake-ink);
+        font-size: 17px;
+        font-weight: 750;
+    }
+
+/* Cartões das filiais */
+
+.branch-select-card {
+    display: block;
+    margin-bottom: 13px;
+    padding: 17px;
+    border: 1px solid #f0e2e4;
+    border-radius: 15px;
+    color: var(--cupcake-ink);
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(85, 53, 68, .04);
+    transition: .2s ease;
+}
+
+    .branch-select-card:hover {
+        color: var(--cupcake-ink);
+        border-color: #e5aabd;
+        background: #fff8f9;
+        transform: translateY(-2px);
+        box-shadow: var(--cupcake-shadow);
+    }
+
+    .branch-select-card.selected {
+        border: 2px solid var(--cupcake-pink);
+        background: #fff4f6;
+        box-shadow: 0 7px 20px rgba(217, 91, 131, .10);
+    }
+
+    .branch-select-card h6 {
+        color: var(--cupcake-pink-dark);
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .branch-select-card small {
+        color: var(--cupcake-muted);
+        font-size: 11px;
+    }
+
+.branch-card-location {
+    padding-top: 10px;
+    border-top: 1px solid var(--cupcake-line);
+}
+
+/* Indicadores dentro dos cartões */
+
+.branch-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    padding-top: 12px;
+    border-top: 1px solid var(--cupcake-line);
+}
+
+    .branch-card-stats > div {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .branch-card-stats strong {
+        color: var(--cupcake-pink-dark);
+        font-size: 19px;
+        font-weight: 850;
+    }
+
+    .branch-card-stats small {
+        color: var(--cupcake-muted);
+        font-size: 10px;
+    }
+
+/* Estado inicial: nenhuma filial selecionada */
+
+.branch-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    padding: 35px;
+    border: 1px dashed #e7c6d0;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #fff9f6, #fff1f5);
+    text-align: center;
+}
+
+.branch-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    margin-bottom: 17px;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: var(--cupcake-shadow);
+    font-size: 32px;
+}
+
+.branch-empty-state h4 {
+    color: var(--cupcake-ink);
+    font-family: Georgia, serif;
+    font-size: 24px;
+}
+
+.branch-empty-state p {
+    max-width: 480px;
+    font-size: 13px;
+}
+
+/* Indicadores da filial selecionada */
+
+.branch-metric {
+    height: 100%;
+    padding: 20px;
+    border: 1px solid #eee1e4;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(85, 53, 68, .045);
+}
+
+    .branch-metric small {
+        color: var(--cupcake-muted);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .branch-metric h3 {
+        margin: 9px 0 0;
+        color: var(--cupcake-ink);
+        font-size: 29px;
+        font-weight: 850;
+    }
+
+    .branch-metric.pending {
+        background: #fff9ed;
+        border-color: #f3e4c4;
+    }
+
+        .branch-metric.pending h3 {
+            color: #c18b36;
+        }
+
+    .branch-metric.processing {
+        background: #f0f7ff;
+        border-color: #dceafa;
+    }
+
+        .branch-metric.processing h3 {
+            color: #5487bd;
+        }
+
+    .branch-metric.completed {
+        background: #f0faf3;
+        border-color: #d9efdf;
+    }
+
+        .branch-metric.completed h3 {
+            color: #55966a;
+        }
+
+/* Detalhes e tabela */
+
+.gestao-pedidos-page .card {
+    overflow: hidden;
+    border: 1px solid var(--cupcake-line);
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: var(--cupcake-shadow);
+}
+
+.gestao-pedidos-page .card-header {
+    padding: 17px 20px;
+}
+
+.gestao-pedidos-page .card-body {
+    padding: 22px;
+}
+
+    .gestao-pedidos-page .card-body h6 {
+        color: var(--cupcake-pink-dark);
+        font-weight: 800;
+    }
+
+.gestao-pedidos-page .table {
+    margin-bottom: 0;
+    font-size: 12px;
+}
+
+    .gestao-pedidos-page .table td {
+        vertical-align: middle;
+    }
+
+/* Responsividade */
+
+@media (max-width: 767.98px) {
+    .gestao-pedidos-page {
+        padding: 20px 14px;
+    }
+
+        .gestao-pedidos-page > .mb-4 h2 {
+            font-size: 29px;
+        }
+
+    .branch-sidebar {
+        padding: 15px;
+    }
+
+    .branch-metric {
+        padding: 14px;
+    }
+
+        .branch-metric h3 {
+            font-size: 24px;
+        }
+
+    .branch-empty-state {
+        min-height: 220px;
+        padding: 24px;
+    }
+}
