@@ -188,6 +188,32 @@
                                     <span class="product-popularity">@produto.QuantidadePedidos pedido(s)</span>
                                 </div>
                                 <h3>@produto.Nome</h3>
+
+                                @if (produto.QuantidadeAvaliacoes > 0 && produto.MediaAvaliacao.HasValue)
+                                {
+                                    var estrelasPreenchidas = (int)Math.Round(
+                                    produto.MediaAvaliacao.Value,
+                                    MidpointRounding.AwayFromZero
+                                    );
+
+                                    <div class="mb-2" aria-label="Média de @produto.MediaAvaliacao.Value.ToString("0.0", cultura) de 5 estrelas">
+                                        @for (int estrela = 1; estrela <= 5; estrela++)
+                                        {
+                                            <span class="@(estrela <= estrelasPreenchidas ? "text-warning" : "text-secondary")">★</span>
+                                        }
+
+                                        <small class="text-muted ms-1">
+                                            @produto.MediaAvaliacao.Value.ToString("0.0", cultura)
+                                            (@produto.QuantidadeAvaliacoes)
+                                        </small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <small class="text-muted d-block mb-2">Ainda sem avaliações</small>
+                                }
+
+
                                 @if (!string.IsNullOrWhiteSpace(produto.Descricao))
                                 {
                                     <p class="product-description">@produto.Descricao</p>

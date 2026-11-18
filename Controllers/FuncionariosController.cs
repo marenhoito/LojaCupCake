@@ -43,14 +43,21 @@ namespace LojaCupCake.Controllers
 
         // Exibir cadastro
         [HttpGet]
-        public async Task<IActionResult> Create()
+        [HttpGet]
+        public async Task<IActionResult> Create(long? filialId)
         {
             var filiaisPermitidas =
                 await ObterFiliaisPermitidasParaCadastroAsync();
 
-            // Funcionário sem permissão em nenhuma filial não pode cadastrar.
             if (!User.IsInRole("Administrador") && !filiaisPermitidas.Any())
                 return Forbid();
+
+            // Impede acesso a uma filial sem permissão de cadastro.
+            if (filialId.HasValue &&
+                !filiaisPermitidas.Any(f => f.FilialId == filialId.Value))
+            {
+                return Forbid();
+            }
 
             var model = new CadastroFuncionarioViewModel
             {
@@ -58,7 +65,9 @@ namespace LojaCupCake.Controllers
                     new FuncionarioFilialViewModel
                     {
                         FilialId = f.FilialId,
-                        NomeFilial = f.Nome
+                        NomeFilial = f.Nome,
+                        Selecionada = filialId.HasValue &&
+                                      f.FilialId == filialId.Value
                     }).ToList()
             };
 

@@ -110,6 +110,19 @@ namespace LojaCupCake.Controllers
                 })
                 .ToDictionaryAsync(x => x.ProdutoId, x => x.QuantidadePedidos);
 
+            // Média e quantidade de avaliações por produto.
+            var avaliacoesProdutos = await _context.AvaliacoesProdutos
+                .Where(a => a.Pedido.StatusPedido == StatusPedido.Concluido)
+                .GroupBy(a => a.ProdutoId)
+                .Select(g => new
+                {
+                    ProdutoId = g.Key,
+                    Media = g.Average(a => (double)a.Nota),
+                    Quantidade = g.Count()
+                })
+                .ToDictionaryAsync(a => a.ProdutoId);
+
+
             var estoques = new Dictionary<long, int>();
 
             if (filialId.HasValue)
@@ -142,13 +155,23 @@ namespace LojaCupCake.Controllers
                     Descricao = p.Descricao,
                     ImagemUrl = p.ImagemUrl,
                     Preco = p.PrecoAtual,
+                    MediaAvaliacao = avaliacoesProdutos.TryGetValue(p.ProdutoId, out var avaliacao)
+    ? avaliacao.Media
+    : null,
+
+                    QuantidadeAvaliacoes = avaliacoesProdutos.TryGetValue(p.ProdutoId, out var resumo)
+    ? resumo.Quantidade
+    : 0,
                     NomeCategoria = p.NomeCategoria,
                     EstoqueDisponivel = filialId.HasValue
                         ? Math.Max(0, saldo - quantidadeJaNoCarrinho)
                         : null,
                     QuantidadePedidos = popularidade.TryGetValue(p.ProdutoId, out var qtd)
                         ? qtd
-                        : 0
+                        : 0,
+
+
+
                 };
             }).ToList();
 

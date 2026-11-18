@@ -104,6 +104,19 @@
         </nav>
     </header>
 
+    @if (usuarioAutenticado)
+    {
+        <div id="pedidoNotificacoes"
+             style="position:fixed;
+                    top:90px;
+                    right:16px;
+                    z-index:1080;
+                    width:min(420px, calc(100vw - 32px));"
+             aria-live="polite"
+             aria-atomic="false">
+        </div>
+    }
+
     <main class="site-main">
         @RenderBody()
     </main>
@@ -119,6 +132,116 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/signalr/signalr.min.js"></script>
+
+    @if (usuarioAutenticado)
+    {
+        <script>
+            (() => {
+                const container =
+                    document.getElementById("pedidoNotificacoes");
+
+                const usuarioId =
+                    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                        User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                ));
+
+            const chatUrl =
+                @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                        Url.Action("Pedido", "Chat")
+                                ));
+
+            if (!container || typeof signalR === "undefined")
+                return;
+
+            function mostrarNotificacao(titulo, mensagem, url, textoLink) {
+                const card = document.createElement("div");
+                card.className = "alert alert-info shadow-sm mb-2";
+                card.setAttribute("role", "status");
+
+                const fechar = document.createElement("button");
+                fechar.type = "button";
+                fechar.className = "btn-close float-end";
+                fechar.setAttribute("aria-label", "Fechar");
+                fechar.addEventListener("click", () => card.remove());
+
+                const cabecalho = document.createElement("div");
+                cabecalho.className = "fw-bold mb-1";
+                cabecalho.textContent = titulo;
+
+                const corpo = document.createElement("p");
+                corpo.className = "mb-2";
+                corpo.textContent = mensagem;
+
+                card.append(fechar, cabecalho, corpo);
+
+                if (url) {
+                    const link = document.createElement("a");
+                    link.className = "alert-link";
+                    link.href = url;
+                    link.textContent = textoLink;
+                    card.appendChild(link);
+                }
+
+                container.prepend(card);
+
+                while (container.children.length > 3) {
+                    container.lastElementChild.remove();
+                }
+            }
+
+            const conexao = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/chat-pedido")
+                .withAutomaticReconnect()
+                .build();
+
+            // NOTIFICAÇÃO DE NOVA MENSAGEM
+            conexao.on("NovaMensagem", mensagem => {
+
+                if (!mensagem) return;
+
+                // Não notificar o próprio remetente.
+                if (mensagem.remetenteUsuarioId === usuarioId)
+                    return;
+
+                const conteudo = mensagem.conteudo || "";
+
+                const resumo = conteudo.length > 160
+                    ? conteudo.substring(0, 160) + "..."
+                    : conteudo;
+
+                mostrarNotificacao(
+                    "Nova mensagem de " +
+                        (mensagem.remetenteNome || "Atendimento"),
+                    resumo,
+                    chatUrl + "?id=" +
+                        encodeURIComponent(mensagem.pedidoId),
+                    "Abrir conversa"
+                );
+            });
+
+            // NOTIFICAÇÃO DE ATUALIZAÇÃO DO PEDIDO
+            conexao.on("StatusPedidoAtualizado", aviso => {
+
+                if (!aviso) return;
+
+                mostrarNotificacao(
+                    "Atualização do pedido " + aviso.codigoPedido,
+                    aviso.mensagem,
+                    aviso.url,
+                    "Acompanhar pedido"
+                );
+            });
+
+            conexao.start().catch(erro => {
+                console.warn(
+                    "Não foi possível conectar às notificações.",
+                    erro
+                );
+            });
+        })();
+    </script>
+        }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

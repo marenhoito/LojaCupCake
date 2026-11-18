@@ -373,6 +373,48 @@ namespace LojaCupCake.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Avaliação de atendimento
+            modelBuilder.Entity<AvaliacaoAtendimento>(entity =>
+            {
+                entity.HasKey(a => a.AvaliacaoAtendimentoId);
+
+                entity.HasIndex(a => a.PedidoId)
+                    .IsUnique();
+
+                entity.Property(a => a.Comentario)
+                    .HasMaxLength(500);
+
+                entity.HasOne(a => a.Pedido)
+                    .WithOne(p => p.AvaliacaoAtendimento)
+                    .HasForeignKey<AvaliacaoAtendimento>(a => a.PedidoId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Avaliação de produtos
+            modelBuilder.Entity<AvaliacaoProduto>(entity =>
+            {
+                entity.HasKey(a => a.AvaliacaoProdutoId);
+
+                entity.HasIndex(a => new
+                {
+                    a.PedidoId,
+                    a.ProdutoId
+                }).IsUnique();
+
+                entity.Property(a => a.Comentario)
+                    .HasMaxLength(500);
+
+                entity.HasOne(a => a.Pedido)
+                    .WithMany(p => p.AvaliacoesProdutos)
+                    .HasForeignKey(a => a.PedidoId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(a => a.Produto)
+                    .WithMany(p => p.Avaliacoes)
+                    .HasForeignKey(a => a.ProdutoId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
 
             // FuncionamentoFilial
             modelBuilder.Entity<FuncionamentoFilial>(entity =>
@@ -433,5 +475,11 @@ namespace LojaCupCake.Data
 
         public DbSet<FuncionamentoFilial> FuncionamentosFiliais
             => Set<FuncionamentoFilial>();
+
+        public DbSet<AvaliacaoProduto> AvaliacoesProdutos
+    => Set<AvaliacaoProduto>();
+
+        public DbSet<AvaliacaoAtendimento> AvaliacoesAtendimento
+            => Set<AvaliacaoAtendimento>();
     }
 }

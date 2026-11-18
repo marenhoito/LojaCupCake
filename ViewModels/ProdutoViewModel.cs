@@ -53,5 +53,9 @@ namespace LojaCupCake.ViewModels
         public string? NomeCategoria { get; set; }
 
         public List<SelectListItem> Categorias { get; set; } = new();
+
+        public double? MediaAvaliacao { get; set; }
+
+        public int QuantidadeAvaliacoes { get; set; }
     }
 }

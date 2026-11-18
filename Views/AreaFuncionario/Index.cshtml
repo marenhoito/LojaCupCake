@@ -13,6 +13,38 @@
         </p>
     </div>
 
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Pedidos aprovados por você</h6>
+                    <h2 class="fw-bold text-primary">
+                        @Model.PedidosAprovados
+                    </h2>
+                    <small class="text-muted">
+                        Total de pedidos aprovados.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Tempo de cadastro</h6>
+                    <h2 class="fw-bold text-primary">
+                        @Model.DiasCadastrado dias
+                    </h2>
+                    <small class="text-muted">
+                        Tempo desde seu cadastro na loja.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
     <div class="card mb-4">
         <div class="card-header">
             Minhas filiais
@@ -65,11 +97,23 @@
 
                                     </ul>
 
-                                    <a asp-action="Index"
+                                    <a asp-controller="GestaoPedidos"
+                                       asp-action="Index"
                                        asp-route-filialId="@filial.FilialId"
                                        class="btn btn-primary w-100">
                                         Acessar filial
                                     </a>
+
+                            @if (filial.PodeCadastrarFuncionarios)
+                                    {
+                                        <a asp-controller="Funcionarios"
+                                           asp-action="Create"
+                                           asp-route-filialId="@filial.FilialId"
+                                           class="btn btn-outline-success w-100 mt-2">
+                                            Cadastrar funcionário
+                                        </a>
+                                    }
+
 
                                 </div>
                             </div>
@@ -82,46 +126,8 @@
         </div>
     </div>
 
-    @if (Model.FilialAtual != null)
-    {
-        <div class="card border-primary mb-4">
-
-            <div class="card-header">
-                Filial de trabalho selecionada
-            </div>
-
-            <div class="card-body">
-
-                <h4>@Model.FilialAtual.NomeFilial</h4>
-
-                <p class="text-muted">
-                    Você está trabalhando nesta filial.
-                </p>
-
-                <hr />
-
-                <h6>Permissões disponíveis</h6>
-
-                <ul>
-                    @if (Model.FilialAtual.PodeAprovarPedidos)
-                    {
-                        <li>Aprovação de pedidos</li>
-                    }
-
-                    @if (Model.FilialAtual.PodeCadastrarFuncionarios)
-                    {
-                        <li>Cadastro de funcionários</li>
-                    }
-
-                    @if (!Model.FilialAtual.PodeAprovarPedidos &&
-                                    !Model.FilialAtual.PodeCadastrarFuncionarios)
-                    {
-                        <li>Consulta das informações da filial</li>
-                    }
-                </ul>
-
-            </div>
-        </div>
-    }
+    ff
+        
+    
 
 </div>

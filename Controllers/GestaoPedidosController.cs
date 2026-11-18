@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using LojaCupCake.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
+
 
 namespace LojaCupCake.Controllers
 {
@@ -15,9 +19,17 @@ namespace LojaCupCake.Controllers
     public class GestaoPedidosController : Controller
     {
         private readonly ApplicationDbContext _context;
-        public GestaoPedidosController(ApplicationDbContext context)
+        private readonly IHubContext<ChatPedidoHub> _hubContext;
+        private readonly ILogger<GestaoPedidosController> _logger;
+
+        public GestaoPedidosController(
+            ApplicationDbContext context,
+            IHubContext<ChatPedidoHub> hubContext,
+            ILogger<GestaoPedidosController> logger)
         {
             _context = context;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         // LISTAGEM POR FILIAL
@@ -200,11 +212,13 @@ namespace LojaCupCake.Controllers
                 .Include(p => p.Filial)
                 .Include(p => p.Itens)
                 .Include(p => p.Pagamentos)
+                .Include(p => p.Cliente)
                 .Include(p => p.EnderecoEntrega)
                 .Include(p => p.Historico)
                     .ThenInclude(h => h.Responsavel)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.PedidoId == id);
+
 
             if (pedido == null)
                 return NotFound();
@@ -415,6 +429,11 @@ namespace LojaCupCake.Controllers
                 await _context.SaveChangesAsync();
                 await transacao.CommitAsync();
 
+                await NotificarClienteAsync(
+    pedido,
+    $"O status do seu pedido foi atualizado para {DescricaoStatus(novoStatus)}."
+);
+
                 TempData["Sucesso"] =
                     "Status do pedido atualizado com sucesso!";
 
@@ -471,6 +490,7 @@ namespace LojaCupCake.Controllers
             {
                 var pedido = await _context.Pedidos
                     .Include(p => p.Pagamentos)
+                    .Include(p => p.Cliente)
                     .FirstOrDefaultAsync(p => p.PedidoId == pedidoId);
 
                 if (pedido == null)
@@ -519,6 +539,11 @@ namespace LojaCupCake.Controllers
                 await _context.SaveChangesAsync();
                 await transacao.CommitAsync();
 
+                await NotificarClienteAsync(
+    pedido,
+    $"Seu pedido {pedido.CodigoPedido} foi retirado e concluído."
+);
+
                 TempData["Sucesso"] = "Código validado. Pedido de retirada concluído.";
                 return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
             }
@@ -543,6 +568,7 @@ namespace LojaCupCake.Controllers
             {
                 var pedido = await _context.Pedidos
                     .Include(p => p.Pagamentos)
+                    .Include(p => p.Cliente)
                     .FirstOrDefaultAsync(p => p.PedidoId == pedidoId);
 
                 if (pedido == null)
@@ -627,6 +653,58 @@ namespace LojaCupCake.Controllers
             }
         }
 
+
+        private async Task NotificarClienteAsync(
+    Pedido pedido,
+    string mensagem)
+        {
+            var clienteUsuarioId = pedido.Cliente?.UsuarioId;
+
+            if (string.IsNullOrWhiteSpace(clienteUsuarioId))
+                return;
+
+            try
+            {
+                await _hubContext.Clients
+                    .User(clienteUsuarioId)
+                    .SendAsync("StatusPedidoAtualizado", new
+                    {
+                        pedidoId = pedido.PedidoId,
+                        codigoPedido = pedido.CodigoPedido,
+                        status = DescricaoStatus(pedido.StatusPedido),
+                        mensagem = mensagem,
+                        url = Url.Action(
+                            "Detalhes",
+                            "Pedidos",
+                            new { id = pedido.PedidoId }
+                        )
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Falha ao notificar cliente sobre o pedido {PedidoId}",
+                    pedido.PedidoId
+                );
+            }
+        }
+
+        private static string DescricaoStatus(StatusPedido status)
+        {
+            return status switch
+            {
+                StatusPedido.AguardandoAprovacao => "Aguardando aprovação",
+                StatusPedido.Aprovado => "Aprovado",
+                StatusPedido.Rejeitado => "Rejeitado",
+                StatusPedido.EmPreparacao => "Em preparação",
+                StatusPedido.Pronto => "Pronto",
+                StatusPedido.SaiuParaEntrega => "Saiu para entrega",
+                StatusPedido.Concluido => "Concluído",
+                StatusPedido.Cancelado => "Cancelado",
+                _ => status.ToString()
+            };
+        }
 
         // AUTORIZAÇÃO POR FILIAL, INCLUINDO FILIAIS DESATIVADAS
         private async Task<bool> PodeGerenciarPedidosDaFilialAsync(

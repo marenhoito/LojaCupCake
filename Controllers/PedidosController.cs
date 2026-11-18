@@ -79,6 +79,8 @@ namespace LojaCupCake.Controllers
                 .Include(p => p.Itens)
                 .Include(p => p.Pagamentos)
                 .Include(p => p.EnderecoEntrega)
+                .Include(p => p.AvaliacaoAtendimento)
+.Include(p => p.AvaliacoesProdutos)
                 .Include(p => p.Historico)
                     .ThenInclude(h => h.Responsavel)
                 .AsNoTracking()
@@ -249,7 +251,9 @@ namespace LojaCupCake.Controllers
                     return NotFound();
 
                 if (pedido.StatusPedido != StatusPedido.AguardandoAprovacao &&
-                    pedido.StatusPedido != StatusPedido.Aprovado)
+                    pedido.StatusPedido != StatusPedido.Aprovado &&
+                    pedido.StatusPedido != StatusPedido.EmPreparacao &&
+                    pedido.StatusPedido != StatusPedido.Pronto)
                 {
                     await transacao.RollbackAsync();
 
@@ -492,6 +496,81 @@ namespace LojaCupCake.Controllers
             }
         }
 
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AvaliarAtendimento(
+            long pedidoId,
+            int nota,
+            string? comentario)
+        {
+            var cliente = await ObterClienteAsync();
+
+            if (cliente == null)
+                return Forbid();
+
+            if (nota < 1 || nota > 5)
+            {
+                TempData["Erro"] = "Selecione uma nota de 1 a 5.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            if (comentario?.Length > 500)
+            {
+                TempData["Erro"] = "O comentário deve ter até 500 caracteres.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            var pedido = await _context.Pedidos
+                .FirstOrDefaultAsync(p =>
+                    p.PedidoId == pedidoId &&
+                    p.ClienteId == cliente.ClienteId);
+
+            if (pedido == null)
+                return NotFound();
+
+            if (pedido.StatusPedido != StatusPedido.Concluido)
+            {
+                TempData["Erro"] = "Somente pedidos concluídos podem ser avaliados.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            bool jaAvaliou = await _context.AvaliacoesAtendimento
+                .AnyAsync(a => a.PedidoId == pedidoId);
+
+            if (jaAvaliou)
+            {
+                TempData["Erro"] = "Este pedido já possui avaliação de atendimento.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            try
+            {
+                _context.AvaliacoesAtendimento.Add(new AvaliacaoAtendimento
+                {
+                    PedidoId = pedidoId,
+                    Nota = nota,
+                    Comentario = string.IsNullOrWhiteSpace(comentario)
+                        ? null : comentario.Trim(),
+                    DataAvaliacao = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
+                TempData["Sucesso"] = "Avaliação do atendimento enviada!";
+            }
+            catch (DbUpdateException)
+            {
+                TempData["Erro"] = "Não foi possível registrar a avaliação. Verifique se ela já foi enviada.";
+            }
+
+            return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+        }
+
+
+        
+
         // CONFIRMAÇÃO DO RECEBIMENTO PELO CLIENTE.
         // Para concluir uma entrega, a loja e o cliente precisam confirmar.
         [HttpPost]
@@ -575,6 +654,86 @@ namespace LojaCupCake.Controllers
                 return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
             }
         }
+
+
+
+        
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AvaliarProduto(
+            long pedidoId,
+            long produtoId,
+            int nota,
+            string? comentario)
+        {
+            var cliente = await ObterClienteAsync();
+
+            if (cliente == null)
+                return Forbid();
+
+            if (nota < 1 || nota > 5)
+            {
+                TempData["Erro"] = "Selecione uma nota de 1 a 5.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            if (comentario?.Length > 500)
+            {
+                TempData["Erro"] = "O comentário deve ter até 500 caracteres.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            var pedido = await _context.Pedidos
+                .FirstOrDefaultAsync(p =>
+                    p.PedidoId == pedidoId &&
+                    p.ClienteId == cliente.ClienteId);
+
+            if (pedido == null)
+                return NotFound();
+
+            if (pedido.StatusPedido != StatusPedido.Concluido)
+            {
+                TempData["Erro"] = "Somente pedidos concluídos podem ser avaliados.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            bool produtoComprado = await _context.ItensPedido
+                .AnyAsync(i =>
+                    i.PedidoId == pedidoId &&
+                    i.ProdutoId == produtoId);
+
+            if (!produtoComprado)
+                return Forbid();
+
+            bool jaAvaliou = await _context.AvaliacoesProdutos
+                .AnyAsync(a =>
+                    a.PedidoId == pedidoId &&
+                    a.ProdutoId == produtoId);
+
+            if (jaAvaliou)
+            {
+                TempData["Erro"] = "Este produto já foi avaliado neste pedido.";
+                return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+            }
+
+            _context.AvaliacoesProdutos.Add(new AvaliacaoProduto
+            {
+                PedidoId = pedidoId,
+                ProdutoId = produtoId,
+                Nota = nota,
+                Comentario = string.IsNullOrWhiteSpace(comentario)
+                    ? null : comentario.Trim(),
+                DataAvaliacao = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            TempData["Sucesso"] = "Avaliação do produto enviada!";
+
+            return RedirectToAction(nameof(Detalhes), new { id = pedidoId });
+        }
+
 
         private static void ConfirmarPagamentoEmDinheiro(
             ICollection<Pagamento> pagamentos,

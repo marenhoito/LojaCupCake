@@ -77,5 +77,11 @@ namespace LojaCupCake.Models
 
         public ICollection<ChatMensagem> MensagensChat { get; set; }
             = new List<ChatMensagem>();
+
+
+        public AvaliacaoAtendimento? AvaliacaoAtendimento { get; set; }
+
+        public ICollection<AvaliacaoProduto> AvaliacoesProdutos { get; set; }
+            = new List<AvaliacaoProduto>();
     }
 }

@@ -41,5 +41,11 @@ namespace LojaCupCake.Models
 
         public ICollection<ItemPedido> ItensPedido { get; set; }
             = new List<ItemPedido>();
+
+
+        public ICollection<AvaliacaoProduto> Avaliacoes { get; set; }
+    = new List<AvaliacaoProduto>();
+
+
     }
 }

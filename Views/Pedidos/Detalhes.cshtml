@@ -16,6 +16,45 @@
         pagamento.FormaPagamento != LojaCupCake.Models.FormaPagamento.Dinheiro &&
         (pagamento.StatusPagamento == LojaCupCake.Models.StatusPagamento.Pendente ||
          pagamento.StatusPagamento == LojaCupCake.Models.StatusPagamento.Recusado);
+
+
+    // Etapas de acompanhamento do pedido
+    var etapas = Model.TipoRecebimento ==
+        LojaCupCake.Models.TipoRecebimento.Entrega
+
+        ? new[]
+        {
+            (Status: LojaCupCake.Models.StatusPedido.AguardandoAprovacao, Nome: "Aguardando aprovação"),
+            (Status: LojaCupCake.Models.StatusPedido.Aprovado, Nome: "Aprovado"),
+            (Status: LojaCupCake.Models.StatusPedido.EmPreparacao, Nome: "Em preparação"),
+            (Status: LojaCupCake.Models.StatusPedido.Pronto, Nome: "Pronto"),
+            (Status: LojaCupCake.Models.StatusPedido.SaiuParaEntrega, Nome: "Saiu para entrega"),
+            (Status: LojaCupCake.Models.StatusPedido.Concluido, Nome: "Concluído")
+        }
+
+        : new[]
+        {
+            (Status: LojaCupCake.Models.StatusPedido.AguardandoAprovacao, Nome: "Aguardando aprovação"),
+            (Status: LojaCupCake.Models.StatusPedido.Aprovado, Nome: "Aprovado"),
+            (Status: LojaCupCake.Models.StatusPedido.EmPreparacao, Nome: "Em preparação"),
+            (Status: LojaCupCake.Models.StatusPedido.Pronto, Nome: "Pronto para retirada"),
+            (Status: LojaCupCake.Models.StatusPedido.Concluido, Nome: "Concluído")
+        };
+
+    var etapaAtual = Array.FindIndex(
+        etapas,
+        e => e.Status == Model.StatusPedido
+    );
+
+    var progresso = etapaAtual <= 0
+        ? 0
+        : (int)Math.Round(
+            (double)etapaAtual / (etapas.Length - 1) * 100
+        );
+
+    bool pedidoEncerrado =
+        Model.StatusPedido == LojaCupCake.Models.StatusPedido.Cancelado ||
+        Model.StatusPedido == LojaCupCake.Models.StatusPedido.Rejeitado;
 }
 
 <div class="container mt-4">
@@ -36,13 +75,205 @@
         </div>
     }
 
+    @if (pedidoEncerrado)
+    {
+        <div class="alert alert-danger mb-4">
+            <h5 class="mb-1">
+                Pedido @Model.StatusPedido
+            </h5>
+            <p class="mb-0">
+                Este pedido não está mais em andamento.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                Acompanhamento do pedido
+            </div>
+
+            <div class="card-body">
+
+                <div class="progress"
+                     style="height: 10px;"
+                     role="progressbar"
+                     aria-valuenow="@progresso"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+
+                    <div class="progress-bar"
+                         style="width: @(progresso)%; background-color: #dc5b83;">
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-between flex-wrap gap-3 mt-3">
+
+                    @for (int i = 0; i < etapas.Length; i++)
+                    {
+                        bool concluida = i < etapaAtual;
+                        bool atual = i == etapaAtual;
+
+                        <div class="text-center flex-fill"
+                             style="min-width: 90px;">
+
+                            <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center fw-bold"
+                                 style="
+                                        width: 34px;
+                                        height: 34px;
+                                        background-color: @(concluida || atual ? "#dc5b83" : "#e9ecef");
+                                        color: @(concluida || atual ? "white" : "#6c757d");
+                                     ">
+
+                                @(concluida ? "✓" : (i + 1).ToString())
+
+                            </div>
+
+                            <div class="small mt-2 @(atual ? "fw-bold text-dark" : "text-muted")">
+                                @etapas[i].Nome
+                            </div>
+
+                        </div>
+                    }
+
+                </div>
+
+                <hr />
+
+                <p class="mb-0">
+                    <strong>Status atual:</strong>
+                    @Model.StatusPedido
+                </p>
+
+            </div>
+        </div>
+    }
+
+
+
+    @if (Model.StatusPedido == LojaCupCake.Models.StatusPedido.Concluido)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Avalie sua experiência!</h5>
+            </div>
+
+            <div class="card-body">
+
+                <h6>Avaliação do atendimento</h6>
+
+                @if (Model.AvaliacaoAtendimento == null)
+                {
+                    <form asp-action="AvaliarAtendimento" method="post">
+                        <input type="hidden" name="pedidoId"
+                               value="@Model.PedidoId" />
+
+                        <label class="form-label">Sua nota</label>
+                        <select name="nota" class="form-select mb-3" required>
+                            <option value="">Selecione</option>
+                            @for (int n = 5; n >= 1; n--)
+                            {
+                                <option value="@n">@n estrelas</option>
+                            }
+                        </select>
+
+                        <label class="form-label">Comentário</label>
+                        <textarea name="comentario"
+                          class="form-control mb-3"
+                          maxlength="500"
+                          placeholder="Conte como foi sua experiência..."></textarea>
+
+                        <button class="btn btn-primary" type="submit">
+                            Enviar avaliação
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-success">
+                        Atendimento avaliado:
+                        <strong>@Model.AvaliacaoAtendimento.Nota/5 ⭐</strong>
+                    </p>
+                    @if (!string.IsNullOrWhiteSpace(
+                                Model.AvaliacaoAtendimento.Comentario))
+                    {
+                        <p>@Model.AvaliacaoAtendimento.Comentario</p>
+                    }
+                }
+
+                <hr />
+
+                <h6>Avaliação dos produtos</h6>
+
+                @foreach (var item in Model.Itens
+                            .GroupBy(i => i.ProdutoId)
+                            .Select(g => g.First()))
+                {
+                    var avaliacao = Model.AvaliacoesProdutos
+                    .FirstOrDefault(a => a.ProdutoId == item.ProdutoId);
+
+                    <div class="border rounded p-3 mb-3">
+                        <strong>@item.NomeProdutoSnapshot</strong>
+
+                        @if (avaliacao == null)
+                        {
+                            <form asp-action="AvaliarProduto" method="post"
+                                  class="mt-2">
+
+                                <input type="hidden" name="pedidoId"
+                                       value="@Model.PedidoId" />
+
+                                <input type="hidden" name="produtoId"
+                                       value="@item.ProdutoId" />
+
+                                <label class="form-label">Sua nota</label>
+                                <select name="nota" class="form-select mb-2"
+                                        required>
+                                    <option value="">Selecione</option>
+                                    @for (int n = 5; n >= 1; n--)
+                                    {
+                                        <option value="@n">@n estrelas</option>
+                                    }
+                                </select>
+
+                                <textarea name="comentario"
+                              class="form-control mb-2"
+                              maxlength="500"
+                              placeholder="O que achou deste cupcake?"></textarea>
+
+                                <button type="submit"
+                                        class="btn btn-outline-primary btn-sm">
+                                    Avaliar produto
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="text-success mb-0 mt-2">
+                                Avaliado: <strong>@avaliacao.Nota/5 ⭐</strong>
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(avaliacao.Comentario))
+                            {
+                                <p class="mb-0">@avaliacao.Comentario</p>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
 
 
     
     @if (Model.StatusPedido ==
         LojaCupCake.Models.StatusPedido.AguardandoAprovacao ||
         Model.StatusPedido ==
-        LojaCupCake.Models.StatusPedido.Aprovado)
+        LojaCupCake.Models.StatusPedido.Aprovado ||
+        Model.StatusPedido ==
+        LojaCupCake.Models.StatusPedido.EmPreparacao ||
+        Model.StatusPedido ==
+        LojaCupCake.Models.StatusPedido.Pronto)
     {
         <div class="card border-danger mb-4">
             <div class="card-body">
@@ -158,6 +389,123 @@
             </div>
         </div>
     </div>
+
+
+    @if (Model.StatusPedido == LojaCupCake.Models.StatusPedido.Concluido)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">⭐ Avalie sua experiência!</h5>
+            </div>
+
+            <div class="card-body">
+
+                <h6>Avaliação do atendimento</h6>
+
+                @if (Model.AvaliacaoAtendimento == null)
+                {
+                    <form asp-action="AvaliarAtendimento" method="post">
+                        <input type="hidden" name="pedidoId" value="@Model.PedidoId" />
+
+                        <label class="form-label">Sua nota</label>
+                        <select name="nota" class="form-select mb-3" required>
+                            <option value="">Selecione</option>
+                            @for (int n = 5; n >= 1; n--)
+                            {
+                                <option value="@n">@n estrelas</option>
+                            }
+                        </select>
+
+                        <label class="form-label">Comentário</label>
+                        <textarea name="comentario"
+                          class="form-control mb-3"
+                          maxlength="500"
+                          placeholder="Conte como foi sua experiência..."></textarea>
+
+                        <button class="btn btn-primary" type="submit">
+                            Enviar avaliação
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-success">
+                        Atendimento avaliado:
+                        <strong>@Model.AvaliacaoAtendimento.Nota/5 ⭐</strong>
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.AvaliacaoAtendimento.Comentario))
+                    {
+                        <p>@Model.AvaliacaoAtendimento.Comentario</p>
+                    }
+                }
+
+                <hr />
+
+                <h6>Avaliação dos produtos</h6>
+
+                @foreach (var item in Model.Itens
+                            .GroupBy(i => i.ProdutoId)
+                            .Select(g => g.First()))
+                {
+                    var avaliacao = Model.AvaliacoesProdutos
+                    .FirstOrDefault(a => a.ProdutoId == item.ProdutoId);
+
+                    <div class="border rounded p-3 mb-3">
+                        <strong>@item.NomeProdutoSnapshot</strong>
+
+                        @if (avaliacao == null)
+                        {
+                            <form asp-action="AvaliarProduto"
+                                  method="post"
+                                  class="mt-2">
+
+                                <input type="hidden" name="pedidoId"
+                                       value="@Model.PedidoId" />
+
+                                <input type="hidden" name="produtoId"
+                                       value="@item.ProdutoId" />
+
+                                <label class="form-label">Sua nota</label>
+                                <select name="nota" class="form-select mb-2" required>
+                                    <option value="">Selecione</option>
+                                    @for (int n = 5; n >= 1; n--)
+                                    {
+                                        <option value="@n">@n estrelas</option>
+                                    }
+                                </select>
+
+                                <textarea name="comentario"
+                              class="form-control mb-2"
+                              maxlength="500"
+                              placeholder="O que achou deste cupcake?"></textarea>
+
+                                <button type="submit"
+                                        class="btn btn-outline-primary btn-sm">
+                                    Avaliar produto
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="text-success mb-0 mt-2">
+                                Avaliado:
+                                <strong>@avaliacao.Nota/5 ⭐</strong>
+                            </p>
+
+                            @if (!string.IsNullOrWhiteSpace(avaliacao.Comentario))
+                            {
+                                <p class="mb-0">@avaliacao.Comentario</p>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+
+
 
     @if (Model.EnderecoEntrega != null)
     {

@@ -86,6 +86,69 @@ namespace LojaCupCake.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("LojaCupCake.Models.AvaliacaoAtendimento", b =>
+                {
+                    b.Property<long>("AvaliacaoAtendimentoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("AvaliacaoAtendimentoId"));
+
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<DateTime>("DataAvaliacao")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Nota")
+                        .HasColumnType("int");
+
+                    b.Property<long>("PedidoId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AvaliacaoAtendimentoId");
+
+                    b.HasIndex("PedidoId")
+                        .IsUnique();
+
+                    b.ToTable("AvaliacoesAtendimento");
+                });
+
+            modelBuilder.Entity("LojaCupCake.Models.AvaliacaoProduto", b =>
+                {
+                    b.Property<long>("AvaliacaoProdutoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("AvaliacaoProdutoId"));
+
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<DateTime>("DataAvaliacao")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Nota")
+                        .HasColumnType("int");
+
+                    b.Property<long>("PedidoId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProdutoId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AvaliacaoProdutoId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.HasIndex("PedidoId", "ProdutoId")
+                        .IsUnique();
+
+                    b.ToTable("AvaliacoesProdutos");
+                });
+
             modelBuilder.Entity("LojaCupCake.Models.Categoria", b =>
                 {
                     b.Property<long>("CategoriaId")
@@ -961,6 +1024,36 @@ namespace LojaCupCake.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("LojaCupCake.Models.AvaliacaoAtendimento", b =>
+                {
+                    b.HasOne("LojaCupCake.Models.Pedido", "Pedido")
+                        .WithOne("AvaliacaoAtendimento")
+                        .HasForeignKey("LojaCupCake.Models.AvaliacaoAtendimento", "PedidoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Pedido");
+                });
+
+            modelBuilder.Entity("LojaCupCake.Models.AvaliacaoProduto", b =>
+                {
+                    b.HasOne("LojaCupCake.Models.Pedido", "Pedido")
+                        .WithMany("AvaliacoesProdutos")
+                        .HasForeignKey("PedidoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LojaCupCake.Models.Produto", "Produto")
+                        .WithMany("Avaliacoes")
+                        .HasForeignKey("ProdutoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Pedido");
+
+                    b.Navigation("Produto");
+                });
+
             modelBuilder.Entity("LojaCupCake.Models.ChatMensagem", b =>
                 {
                     b.HasOne("LojaCupCake.Models.Pedido", "Pedido")
@@ -1262,6 +1355,10 @@ namespace LojaCupCake.Migrations
 
             modelBuilder.Entity("LojaCupCake.Models.Pedido", b =>
                 {
+                    b.Navigation("AvaliacaoAtendimento");
+
+                    b.Navigation("AvaliacoesProdutos");
+
                     b.Navigation("EnderecoEntrega");
 
                     b.Navigation("Historico");
@@ -1275,6 +1372,8 @@ namespace LojaCupCake.Migrations
 
             modelBuilder.Entity("LojaCupCake.Models.Produto", b =>
                 {
+                    b.Navigation("Avaliacoes");
+
                     b.Navigation("Estoques");
 
                     b.Navigation("ItensPedido");

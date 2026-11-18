@@ -48,6 +48,21 @@ namespace LojaCupCake.Controllers
             if (funcionario == null)
                 return RedirectToAction("AcessoNegado", "Conta");
 
+            // Total de pedidos aprovados pelo funcionário
+            var pedidosAprovados = await _context.HistoricosStatusPedido
+                .Where(h =>
+                    h.UsuarioId == usuarioId &&
+                    h.StatusNovo == Models.StatusPedido.Aprovado)
+                .Select(h => h.PedidoId)
+                .Distinct()
+                .CountAsync();
+
+            // Dias desde o cadastro
+            var diasCadastrado = Math.Max(
+                0,
+                (DateTime.UtcNow.Date - funcionario.DataCadastro.Date).Days
+            );
+
             var vinculosAtivos = funcionario.Filiais
                 .Where(ff => ff.Ativo && ff.Filial.Ativo)
                 .ToList();
@@ -55,6 +70,9 @@ namespace LojaCupCake.Controllers
             var model = new PainelFuncionarioViewModel
             {
                 NomeCompleto = funcionario.NomeCompleto,
+                PedidosAprovados = pedidosAprovados,
+                DiasCadastrado = diasCadastrado,
+
 
                 Filiais = vinculosAtivos
                     .OrderBy(ff => ff.Filial.Nome)

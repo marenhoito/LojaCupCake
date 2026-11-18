@@ -53,6 +53,10 @@ namespace LojaCupCake.ViewModels
         public string NomeCategoria { get; set; } = string.Empty;
         public int? EstoqueDisponivel { get; set; }
         public int QuantidadePedidos { get; set; }
+
+        public double? MediaAvaliacao { get; set; }
+
+        public int QuantidadeAvaliacoes { get; set; }
     }
 
     public class CarrinhoLateralItemViewModel
